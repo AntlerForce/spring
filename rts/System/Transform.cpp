@@ -31,7 +31,7 @@ CMatrix44f Transform::ToMatrix() const
 	/*
 	(r0 * sx, r1 * sx, r2 * sx, 0)
 	(r3 * sy, r4 * sy, r5 * sy, 0)
-	(r6 * sz, r6 * sz, r7 * sz, 0)
+	(r6 * sz, r7 * sz, r8 * sz, 0)
 	(tx     , ty     , tz     , 1)
 	*/
 
