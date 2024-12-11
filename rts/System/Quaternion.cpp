@@ -268,7 +268,7 @@ CQuaternion& CQuaternion::InverseInPlace()
 	if unlikely(sqn < float3::nrm_eps())
 		return *this;
 
-	Conjugate() / SqNorm();
+	*this = Conjugate() * math::isqrt(sqn);
 	return *this;
 };
 
@@ -338,12 +338,7 @@ CQuaternion CQuaternion::SLerp(const CQuaternion& q1, const CQuaternion& q2_, co
 
 	if unlikely(cosTheta > 1.0f - float3::cmp_eps()) {
 		// Linear interpolation
-		return CQuaternion(
-			mix(q1.x, q2.x, a),
-			mix(q1.y, q2.y, a),
-			mix(q1.z, q2.z, a),
-			mix(q1.r, q2.r, a)
-		).Normalize();
+		return Lerp(q1, q2, a);
 	} else {
 		// Essential Mathematics, page 467
 		const float angle = math::acos(cosTheta);
