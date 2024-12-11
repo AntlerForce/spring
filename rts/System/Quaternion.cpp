@@ -239,14 +239,20 @@ CMatrix44f CQuaternion::ToRotMatrix() const
 
 float3 CQuaternion::Rotate(const float3& v) const
 {
+#if 0
 	const auto vRotQ = (*this) * CQuaternion(v, 0.0f) * this->Inverse();
 	return float3{ vRotQ.x, vRotQ.y, vRotQ.z };
+#else
+	const float3 u = float3{ x, y, z };
+	return 2.0f * u.dot(v) * u
+		+ (r * r - u.dot(u)) * v
+		+ 2.0f * r * u.cross(v);
+#endif
 }
 
 float4 CQuaternion::Rotate(const float4& v) const
 {
-	const auto vRotQ = (*this) * CQuaternion(v, 0.0f) * this->Inverse();
-	return float4{ vRotQ.x, vRotQ.y, vRotQ.z, v.w };
+	return float4{ Rotate(static_cast<float3>(v)), v.w};
 }
 
 CQuaternion CQuaternion::Inverse() const
