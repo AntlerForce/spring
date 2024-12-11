@@ -63,11 +63,11 @@ CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 	}
 	else if unlikely(v1.same(-v2)) {
 		float3 v;
-		if (v1.x > -float3::cmp_eps() && v1.x < float3::cmp_eps())		// if x ~= 0
+		if (v1.x > -float3::cmp_eps() && v1.x < float3::cmp_eps())       // if x ~= 0
 			v = { 1.0f, 0.0f, 0.0f };
-		else if (v1.y > -float3::cmp_eps() && v1.y < float3::cmp_eps())	// if y ~= 0
+		else if (v1.y > -float3::cmp_eps() && v1.y < float3::cmp_eps())  // if y ~= 0
 			v = { 0.0f, 1.0f, 0.0f };
-		else															// if z ~= 0
+		else                                                             // if z ~= 0
 			v = { 0.0f, 0.0f, 1.0f };
 
 		return CQuaternion(v, math::HALFPI).Normalize();
@@ -172,9 +172,9 @@ std::tuple<float3, CQuaternion, float3>  CQuaternion::DecomposeIntoTRS(const CMa
 	assert(tmpMat.IsRotOrRotTranMatrix());
 
 	return std::make_tuple(
-		float3(mat.col[3]),				//translate
-		CQuaternion::MakeFrom(tmpMat),	//rotate (quat)
-		scaling							//scale
+		float3(mat.col[3]),             //translate
+		CQuaternion::MakeFrom(tmpMat),  //rotate (quat)
+		scaling                         //scale
 	);
 }
 
