@@ -252,7 +252,7 @@ float3 CQuaternion::Rotate(const float3& v) const
 
 float4 CQuaternion::Rotate(const float4& v) const
 {
-	return float4{ Rotate(static_cast<float3>(v)), v.w};
+	return float4{ Rotate(static_cast<float3>(v)), v.w };
 }
 
 CQuaternion CQuaternion::Inverse() const
@@ -268,7 +268,7 @@ CQuaternion& CQuaternion::InverseInPlace()
 	if unlikely(sqn < float3::nrm_eps())
 		return *this;
 
-	*this = Conjugate() * math::isqrt(sqn);
+	*this = Conjugate() / sqn; // aparently not math::sqrt(sqn)
 	return *this;
 };
 
