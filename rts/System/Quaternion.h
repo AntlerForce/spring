@@ -48,6 +48,8 @@ public:
 	static CQuaternion MakeFrom(const float3& v1, const float3& v2);
 	static CQuaternion MakeFrom(const CMatrix44f& mat);
 
+	static const CQuaternion& AssertNormalized(const CQuaternion& q);
+
 	static std::tuple<float3, CQuaternion, float3> DecomposeIntoTRS(const CMatrix44f& mat);
 public:
 	bool Normalized() const;

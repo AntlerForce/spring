@@ -34,12 +34,12 @@ CQuaternion CQuaternion::MakeFrom(const float3& euler)
 	const float sz = math::sin(a3);
 	const float cz = math::cos(a3);
 
-	return CQuaternion(
+	return AssertNormalized(CQuaternion(
 		cy * cz * sx - cx * sy * sz,
 		cx * cz * sy + cy * sx * sz,
 		cx * cy * sz - cz * sx * sy,
 		cx * cy * cz + sx * sy * sz
-	);
+	));
 }
 
 /// <summary>
@@ -50,7 +50,7 @@ CQuaternion CQuaternion::MakeFrom(float angle, const float3& axis)
 	assert(axis.Normalized());
 
 	const float a = 0.5f * angle;
-	return CQuaternion(axis * math::sin(a), math::cos(a));
+	return CQuaternion(axis * math::sin(a), math::cos(a)); //Normalized if axis.Normalized()
 }
 
 /// <summary>
@@ -58,9 +58,8 @@ CQuaternion CQuaternion::MakeFrom(float angle, const float3& axis)
 /// </summary>
 CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 {
-	float dp = v1.dot(v2);
 	if unlikely(v1.same(v2)) {
-		return CQuaternion(v1, 0.0f);
+		return CQuaternion(v1, 0.0f).Normalize();
 	}
 	else if unlikely(v1.same(-v2)) {
 		float3 v;
@@ -71,15 +70,15 @@ CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 		else															// if z ~= 0
 			v = { 0.0f, 0.0f, 1.0f };
 
-		return CQuaternion(v, math::HALFPI);
+		return CQuaternion(v, math::HALFPI).Normalize();
 	}
 	else {
 		float3 u1 = v1; u1.Normalize();
 		float3 u2 = v1; u2.Normalize();
 
-		float3 v = u1.cross(u2);				// compute rotation axis
-		float angle = math::acosf(u1.dot(u2));	// rotation angle
-		return CQuaternion(v, angle * 0.5f);	// half angle
+		float3 v = u1.cross(u2);                         // compute rotation axis
+		float angle = math::acosf(u1.dot(u2));	         // rotation angle
+		return CQuaternion(v, angle * 0.5f).Normalize(); // half angle
 	}
 }
 
@@ -95,46 +94,52 @@ CQuaternion CQuaternion::MakeFrom(const CMatrix44f& mat)
 	if (trace > 0.0f) {
 		const float s = 0.5f * math::isqrt(trace + 1.0f);
 
-		return CQuaternion(
+		return AssertNormalized(CQuaternion(
 			s * (mat.md[1][2] - mat.md[2][1]),
 			s * (mat.md[2][0] - mat.md[0][2]),
 			s * (mat.md[0][1] - mat.md[1][0]),
 			0.25f / s
-		);
+		));
 	}
 	else if (mat.md[0][0] > mat.md[1][1] && mat.md[0][0] > mat.md[2][2]) {
 		const float s = 2.0f * math::sqrt(1.0f + mat.md[0][0] - mat.md[1][1] - mat.md[2][2]);
 		const float invs = 1.0f / s;
 
-		return CQuaternion(
+		return AssertNormalized(CQuaternion(
 			0.25f * s,
 			(mat.md[1][0] + mat.md[0][1]) * invs,
 			(mat.md[2][0] + mat.md[0][2]) * invs,
 			(mat.md[1][2] - mat.md[2][1]) * invs
-		);
+		));
 	}
 	else if (mat.md[1][1] > mat.md[2][2]) {
 		const float s = 2.0f * math::sqrt(1.0f + mat.md[1][1] - mat.md[0][0] - mat.md[2][2]);
 		const float invs = 1.0f / s;
 
-		return CQuaternion(
+		return AssertNormalized(CQuaternion(
 			(mat.md[1][0] + mat.md[0][1]) * invs,
 			0.25f * s,
 			(mat.md[2][1] + mat.md[1][2]) * invs,
 			(mat.md[2][0] - mat.md[0][2]) * invs
-		);
+		));
 	}
 	else {
 		const float s = 2.0f * math::sqrt(1.0f + mat.md[2][2] - mat.md[0][0] - mat.md[1][1]);
 		const float invs = 1.0f / s;
 
-		return CQuaternion(
+		return AssertNormalized(CQuaternion(
 			(mat.md[2][0] + mat.md[0][2]) * invs,
 			(mat.md[2][1] + mat.md[1][2]) * invs,
 			0.25f * s,
 			(mat.md[0][1] - mat.md[1][0]) * invs
-		);
+		));
 	}
+}
+
+const CQuaternion& CQuaternion::AssertNormalized(const CQuaternion& q)
+{
+	assert(q.Normalized());
+	return q;
 }
 
 /// <summary>
@@ -241,7 +246,7 @@ float3 CQuaternion::Rotate(const float3& v) const
 float4 CQuaternion::Rotate(const float4& v) const
 {
 	const auto vRotQ = (*this) * CQuaternion(v, 0.0f) * this->Inverse();
-	return float4{ vRotQ.x, vRotQ.y, vRotQ.z, 0.0f };
+	return float4{ vRotQ.x, vRotQ.y, vRotQ.z, v.w };
 }
 
 CQuaternion CQuaternion::Inverse() const
@@ -263,6 +268,8 @@ CQuaternion& CQuaternion::InverseInPlace()
 
 CQuaternion CQuaternion::operator*(const CQuaternion& rhs) const
 {
+	// *this or rhs can be a vertex from CQuaternion::Rotate(), can't assume either of them is normalized
+
 	std::array<float, 3> crossProduct = {
 		(y * rhs.z) - (z * rhs.y),
 		(z * rhs.x) - (x * rhs.z),
@@ -301,10 +308,15 @@ float CQuaternion::SqNorm() const {
 }
 
 CQuaternion CQuaternion::Lerp(const CQuaternion& q1, const CQuaternion& q2, const float a) {
-	return q1 * (1.0f - a) + (q2 * a);
+	assert(q1.Normalized());
+	assert(q2.Normalized());
+	return (q1 * (1.0f - a) + (q2 * a)).Normalize();
 }
 
 CQuaternion CQuaternion::SLerp(const CQuaternion& q1, const CQuaternion& q2_, const float a) {
+	assert( q1.Normalized());
+	assert(q2_.Normalized());
+
 	if (a == 0.0f)
 		return q1;
 	else if (a == 1.0f)
@@ -325,7 +337,7 @@ CQuaternion CQuaternion::SLerp(const CQuaternion& q1, const CQuaternion& q2_, co
 			mix(q1.y, q2.y, a),
 			mix(q1.z, q2.z, a),
 			mix(q1.r, q2.r, a)
-		);
+		).Normalize();
 	} else {
 		// Essential Mathematics, page 467
 		const float angle = math::acos(cosTheta);
@@ -333,11 +345,11 @@ CQuaternion CQuaternion::SLerp(const CQuaternion& q1, const CQuaternion& q2_, co
 		const float s2 = math::sin((       a) * angle);
 
 		const float invsin = 1.0f / math::sin(angle);
-		return CQuaternion(
+		return AssertNormalized(CQuaternion(
 			(s1 * q1.x + s2 * q2.x) * invsin,
 			(s1 * q1.y + s2 * q2.y) * invsin,
 			(s1 * q1.z + s2 * q2.z) * invsin,
 			(s1 * q1.r + s2 * q2.r) * invsin
-		);
+		));
 	}
 }
