@@ -377,6 +377,15 @@ static inline void MatrixMatrixMultiplySSE(const CMatrix44f& m1, const CMatrix44
 	_mm_store_ps(&mout->md[3][0], moutc4);
 }
 
+bool CMatrix44f::equal(const CMatrix44f& rhs) const
+{
+	return
+		col[0].equals(rhs.col[0]) &&
+		col[1].equals(rhs.col[1]) &&
+		col[2].equals(rhs.col[2]) &&
+		col[3].equals(rhs.col[3]);
+}
+
 bool CMatrix44f::operator==(const CMatrix44f& rhs) const
 {
 	if (this == &rhs)

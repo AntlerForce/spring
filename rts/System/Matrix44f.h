@@ -96,6 +96,9 @@ public:
 	float3 Mul(const float3 v) const { return ((*this) * v); }
 	float4 Mul(const float4 v) const { return ((*this) * v); }
 
+	/// approximately equal
+	bool equal(const CMatrix44f& rhs) const;
+
 	bool operator == (const CMatrix44f& rhs) const;
 	bool operator != (const CMatrix44f& rhs) const { return !(*this == rhs); }
 	/// matrix multiply
