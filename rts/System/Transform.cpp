@@ -28,7 +28,7 @@ void Transform::FromMatrix(const CMatrix44f& mat)
 CMatrix44f Transform::ToMatrix() const
 {
 	// TODO check the sequence
-#if 0
+#if 1
 	CMatrix44f m = r.ToRotMatrix();
 	m.Translate(t);
 	m.Scale(s);
