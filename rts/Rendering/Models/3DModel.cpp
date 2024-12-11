@@ -37,8 +37,8 @@ CR_REG_METADATA(LocalModelPiece, (
 
 	CR_IGNORED(dirty),
 	CR_IGNORED(customDirty),
-	CR_IGNORED(modelSpaceMat),
-	CR_IGNORED(pieceSpaceMat),
+	CR_IGNORED(modelSpaceTra),
+	CR_IGNORED(pieceSpaceTra),
 
 	CR_IGNORED(lodDispLists) //FIXME GL idx!
 ))
@@ -345,7 +345,7 @@ void LocalModel::SetModel(const S3DModel* model, bool initialize)
 			pieces[n].original = omp;
 		}
 
-		pieces[0].UpdateChildMatricesRec(true);
+		pieces[0].UpdateChildTransformRec(true);
 		UpdateBoundingVolume();
 		return;
 	}
@@ -360,7 +360,7 @@ void LocalModel::SetModel(const S3DModel* model, bool initialize)
 	// must recursively update matrices here too: for features
 	// LocalModel::Update is never called, but they might have
 	// baked piece rotations (in the case of .dae)
-	pieces[0].UpdateChildMatricesRec(false);
+	pieces[0].UpdateChildTransformRec(false);
 	UpdateBoundingVolume();
 
 	assert(pieces.size() == model->numPieces);
@@ -462,7 +462,7 @@ LocalModelPiece::LocalModelPiece(const S3DModelPiece* piece)
 	pos = piece->offset;
 	dir = piece->GetEmitDir(); // warning investigated, seems fake
 
-	pieceSpaceMat = CalcPieceSpaceMatrix(pos, rot, original->scales);
+	pieceSpaceTra = CalcPieceSpaceTransform(pos, rot, original->scales);
 
 	children.reserve(piece->children.size());
 }
@@ -500,26 +500,30 @@ void LocalModelPiece::SetPosOrRot(const float3& src, float3& dst) {
 }
 
 
-void LocalModelPiece::UpdateChildMatricesRec(bool updateChildMatrices) const
+void LocalModelPiece::UpdateChildTransformRec(bool updateChildTransform) const
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	if (dirty) {
 		dirty = false;
-		updateChildMatrices = true;
+		updateChildTransform = true;
 
-		pieceSpaceMat = CalcPieceSpaceMatrix(pos, rot, original->scales);
+		pieceSpaceTra = CalcPieceSpaceTransform(pos, rot, original->scales);
 	}
 
-	if (updateChildMatrices) {
-		modelSpaceMat = pieceSpaceMat;
+	if (updateChildTransform) {
+		modelSpaceTra = pieceSpaceTra;
 
 		if (parent != nullptr) {
-			modelSpaceMat >>= parent->modelSpaceMat;
+			// TODO remove the non-sense
+			CMatrix44f thisModelSpaceMat = modelSpaceTra.ToMatrix();
+			const CMatrix44f prntModelSpaceMat = parent->modelSpaceTra.ToMatrix();
+			thisModelSpaceMat >>= prntModelSpaceMat;
+			modelSpaceTra.FromMatrix(thisModelSpaceMat);
 		}
 	}
 
 	for (auto& child : children) {
-		child->UpdateChildMatricesRec(updateChildMatrices);
+		child->UpdateChildTransformRec(updateChildTransform);
 	}
 }
 
@@ -531,11 +535,16 @@ void LocalModelPiece::UpdateParentMatricesRec() const
 
 	dirty = false;
 
-	pieceSpaceMat = CalcPieceSpaceMatrix(pos, rot, original->scales);
-	modelSpaceMat = pieceSpaceMat;
+	pieceSpaceTra = CalcPieceSpaceTransform(pos, rot, original->scales);
+	modelSpaceTra = pieceSpaceTra;
 
-	if (parent != nullptr)
-		modelSpaceMat >>= parent->modelSpaceMat;
+	if (parent != nullptr) {
+		// TODO remove the non-sense
+		CMatrix44f thisModelSpaceMat = modelSpaceTra.ToMatrix();
+		const CMatrix44f prntModelSpaceMat = parent->modelSpaceTra.ToMatrix();
+		thisModelSpaceMat >>= prntModelSpaceMat;
+		modelSpaceTra.FromMatrix(thisModelSpaceMat);
+	}
 }
 
 

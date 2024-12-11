@@ -27,16 +27,26 @@ void Transform::FromMatrix(const CMatrix44f& mat)
 
 CMatrix44f Transform::ToMatrix() const
 {
-	// TODO check the sequence
-#if 1
+	// M = T * R * S;
+	/*
+	(r0 * sx, r1 * sx, r2 * sx, 0)
+	(r3 * sy, r4 * sy, r5 * sy, 0)
+	(r6 * sz, r6 * sz, r7 * sz, 0)
+	(tx     , ty     , tz     , 1)
+	*/
+
+	// therefore
 	CMatrix44f m = r.ToRotMatrix();
-	m.Translate(t);
 	m.Scale(s);
-#else
-	CMatrix44f m = r.ToRotMatrix();
-	m.Scale(s);
-	m.Translate(t);
-#endif
+	m.SetPos(t); // m.Translate() will be wrong here
+
+	CMatrix44f ms; ms.Scale(s);
+	CMatrix44f mr = r.ToRotMatrix();
+	CMatrix44f mt; mt.Translate(t);
+
+	CMatrix44f m2 = mt * mr * ms;
+
+	//assert(m == m2);
 #ifdef _DEBUG
 	//auto [t_, r_, s_] = CQuaternion::DecomposeIntoTRS(m);
 

@@ -193,8 +193,10 @@ public:
 		assert(m.IsOrthoNormal());
 	}
 
-	CMatrix44f ComposeTransform(const float3& t, const float3& r, const float3& s) const {
+	auto ComposeTransform(const float3& t, const float3& r, const float3& s) const {
 		CMatrix44f m;
+
+		// TODO: Remove ToMatrix() / FromMatrix() non-sense
 
 		// NOTE:
 		//   ORDER MATTERS (T(baked + script) * R(baked) * R(script) * S(baked))
@@ -208,7 +210,11 @@ public:
 		// default Spring rotation-order [YPR=Y,X,Z]
 		m.RotateEulerYXZ(-r);
 		m.Scale(s);
-		return m;
+
+		Transform tra;
+		tra.FromMatrix(m);
+
+		return tra;
 	}
 
 	void SetCollisionVolume(const CollisionVolume& cv) { colvol = cv; }
@@ -448,14 +454,15 @@ struct LocalModelPiece
 
 
 	// on-demand functions
-	void UpdateChildMatricesRec(bool updateChildMatrices) const;
+	void UpdateChildTransformRec(bool updateChildMatrices) const;
 	void UpdateParentMatricesRec() const;
 
-	CMatrix44f CalcPieceSpaceMatrixRaw(const float3& p, const float3& r, const float3& s) const { return (original->ComposeTransform(p, r, s)); }
-	CMatrix44f CalcPieceSpaceMatrix(const float3& p, const float3& r, const float3& s) const {
+	auto CalcPieceSpaceTransformOrig(const float3& p, const float3& r, const float3& s) const { return original->ComposeTransform(p, r, s); }
+	auto CalcPieceSpaceTransform(const float3& p, const float3& r, const float3& s) const {
 		if (blockScriptAnims)
-			return pieceSpaceMat;
-		return (CalcPieceSpaceMatrixRaw(p, r, s));
+			return pieceSpaceTra;
+
+		return CalcPieceSpaceTransformOrig(p, r, s);
 	}
 
 	// note: actually OBJECT_TO_WORLD but transform is the same
@@ -472,7 +479,7 @@ struct LocalModelPiece
 
 	bool SetPieceSpaceMatrix(const CMatrix44f& mat) {
 		if ((blockScriptAnims = (mat.GetX() != ZeroVector))) {
-			pieceSpaceMat = mat;
+			pieceSpaceTra.FromMatrix(mat);
 
 			// neither of these are used outside of animation scripts, and
 			// GetEulerAngles wants a matrix created by PYR rotation while
@@ -489,8 +496,7 @@ struct LocalModelPiece
 	const float3& GetRotation() const { return rot; }
 	const float3& GetDirection() const { return dir; }
 
-	const CMatrix44f& GetPieceSpaceMatrix() const { if (dirty) UpdateParentMatricesRec(); return pieceSpaceMat; }
-	const CMatrix44f& GetModelSpaceMatrix() const { if (dirty) UpdateParentMatricesRec(); return modelSpaceMat; }
+	CMatrix44f GetModelSpaceMatrix() const { if (dirty) UpdateParentMatricesRec(); return modelSpaceTra.ToMatrix(); }
 
 	const CollisionVolume* GetCollisionVolume() const { return &colvol; }
 	      CollisionVolume* GetCollisionVolume()       { return &colvol; }
@@ -502,8 +508,8 @@ private:
 	float3 rot; // orientation relative to parent LMP, in radians (updated by scripts)
 	float3 dir; // cached copy of original->GetEmitDir()
 
-	mutable CMatrix44f pieceSpaceMat; // transform relative to parent LMP (SYNCED), combines <pos> and <rot>
-	mutable CMatrix44f modelSpaceMat; // transform relative to root LMP (SYNCED), chained pieceSpaceMat's
+	mutable Transform pieceSpaceTra; // transform relative to parent LMP (SYNCED), combines <pos> and <rot>
+	mutable Transform modelSpaceTra; // transform relative to root LMP (SYNCED), chained pieceSpaceMat's
 
 	CollisionVolume colvol;
 
