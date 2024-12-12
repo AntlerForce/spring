@@ -1,6 +1,9 @@
 /* This file is part of the Spring engine (GPL v2 or later), see LICENSE.html */
 
 #include "System/float3.h"
+
+#include <algorithm>
+
 #include "System/creg/creg_cond.h"
 #include "System/SpringMath.h"
 
