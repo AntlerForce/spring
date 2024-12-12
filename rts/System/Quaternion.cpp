@@ -179,7 +179,11 @@ std::tuple<float3, CQuaternion, float3>  CQuaternion::DecomposeIntoTRS(const CMa
 
 	float3 scaling {s * c0.Length(), c1.Length(), c2.Length()};
 
-	assert(!scaling.equals(ZeroVector));
+	assert(
+		!epscmp(scaling[0], 0.0f, float3::cmp_eps()) &&
+		!epscmp(scaling[1], 0.0f, float3::cmp_eps()) &&
+		!epscmp(scaling[2], 0.0f, float3::cmp_eps())
+	);
 
 	t0 /= scaling[0];
 	t1 /= scaling[1];
