@@ -21,7 +21,9 @@
 CR_BIND(LocalModelPiece, (nullptr))
 CR_REG_METADATA(LocalModelPiece, (
 	CR_MEMBER(pos),
+	CR_MEMBER(posSpeed),
 	CR_MEMBER(rot),
+	CR_MEMBER(rotSpeed),
 	CR_MEMBER(dir),
 	CR_MEMBER(colvol),
 	CR_MEMBER(scriptSetVisible),
@@ -492,7 +494,7 @@ bool LocalModelPiece::SetGetCustomDirty(bool cd) const
 	return cd;
 }
 
-void LocalModelPiece::SetPosOrRot(const float3& src, float3& dst) {
+void LocalModelPiece::SetPosOrRot(const float3& src, float3& dst, const float3& srcSpeed, float3& dstSpeed) {
 	RECOIL_DETAILED_TRACY_ZONE;
 	if (blockScriptAnims)
 		return;
@@ -503,6 +505,7 @@ void LocalModelPiece::SetPosOrRot(const float3& src, float3& dst) {
 	}
 
 	dst = src;
+	dstSpeed = srcSpeed;
 }
 
 
