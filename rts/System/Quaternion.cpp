@@ -59,6 +59,8 @@ CQuaternion CQuaternion::MakeFrom(float angle, const float3& axis)
 /// </summary>
 CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 {
+	assert(v1.Normalized());
+	assert(v2.Normalized());
 #if 0
 	if unlikely(v1.same(v2)) {
 		return CQuaternion(v1, 0.0f).Normalize();
@@ -75,18 +77,12 @@ CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 		return CQuaternion(v, math::HALFPI).Normalize();
 	}
 	else {
-		float3 u1 = v1; u1.Normalize();
-		float3 u2 = v1; u2.Normalize();
-
-		float3 v = u1.cross(u2);                         // compute rotation axis
-		float angle = math::acosf(u1.dot(u2));	         // rotation angle
+		float3 v = v1.cross(u2);                         // compute rotation axis
+		float angle = math::acosf(v1.dot(v2));	         // rotation angle
 		return CQuaternion(v, angle * 0.5f).Normalize(); // half angle
 	}
 #else
 	// https://raw.org/proof/quaternion-from-two-vectors/
-
-	assert(v1.Normalized());
-	assert(v2.Normalized());
 
 	const auto dp = v1.dot(v2);
 	if unlikely(epscmp(dp, -1.0f, float3::cmp_eps())) {
