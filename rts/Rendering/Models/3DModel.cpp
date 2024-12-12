@@ -242,15 +242,21 @@ void S3DModelPiece::Shatter(float pieceChance, int modelType, int texType, int t
 	projectileHandler.AddFlyingPiece(modelType, this, m, pos, speed, pieceParams, renderParams);
 }
 
-void S3DModelPiece::SetPieceTransform(const Transform& tra)
+void S3DModelPiece::SetPieceTransform(const Transform& parentTra)
 {
-	bposeTransform = tra * Transform{
+	bposeTransform = parentTra * Transform{
 		CQuaternion(),
 		offset,
 		scales
 	};
 
 	bposeInvTransform = bposeTransform.InvertAffine();
+#ifdef _DEBUG
+	auto bposeMat = bposeTransform.ToMatrix();
+	auto bposeInvMat = bposeMat.Invert();
+	Transform bposeInvTransform2; bposeInvTransform2.FromMatrix(bposeInvMat);
+	assert(bposeInvTransform.equals(bposeInvTransform2));
+#endif // _DEBUG
 
 	for (S3DModelPiece* c : children) {
 		c->SetPieceTransform(bposeTransform);
@@ -515,10 +521,15 @@ void LocalModelPiece::UpdateChildTransformRec(bool updateChildTransform) const
 
 		if (parent != nullptr) {
 			// TODO remove the non-sense
+			auto modelSpaceTraOrig = modelSpaceTra;
+			auto modelSpaceTra2 = parent->modelSpaceTra * modelSpaceTra;
+
 			CMatrix44f thisModelSpaceMat = modelSpaceTra.ToMatrix();
 			const CMatrix44f prntModelSpaceMat = parent->modelSpaceTra.ToMatrix();
 			thisModelSpaceMat >>= prntModelSpaceMat;
 			modelSpaceTra.FromMatrix(thisModelSpaceMat);
+
+			assert(modelSpaceTra.equals(modelSpaceTra2));
 		}
 	}
 
@@ -540,10 +551,15 @@ void LocalModelPiece::UpdateParentMatricesRec() const
 
 	if (parent != nullptr) {
 		// TODO remove the non-sense
+		auto modelSpaceTraOrig = modelSpaceTra;
+		auto modelSpaceTra2 = parent->modelSpaceTra * modelSpaceTra;
+
 		CMatrix44f thisModelSpaceMat = modelSpaceTra.ToMatrix();
 		const CMatrix44f prntModelSpaceMat = parent->modelSpaceTra.ToMatrix();
 		thisModelSpaceMat >>= prntModelSpaceMat;
 		modelSpaceTra.FromMatrix(thisModelSpaceMat);
+
+		assert(modelSpaceTra.equals(modelSpaceTra2));
 	}
 }
 

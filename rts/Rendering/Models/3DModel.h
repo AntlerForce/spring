@@ -186,7 +186,7 @@ public:
 	void CreateShatterPieces();
 	void Shatter(float, int, int, int, const float3, const float3, const CMatrix44f&) const;
 
-	void SetPieceTransform(const Transform& tra);
+	void SetPieceTransform(const Transform& parentTra);
 	void SetBakedMatrix(const CMatrix44f& m) {
 		bakedTransform.FromMatrix(m);
 		hasBakedMat = !m.IsIdentity();

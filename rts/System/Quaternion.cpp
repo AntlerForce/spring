@@ -58,6 +58,7 @@ CQuaternion CQuaternion::MakeFrom(float angle, const float3& axis)
 /// </summary>
 CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 {
+#if 0
 	if unlikely(v1.same(v2)) {
 		return CQuaternion(v1, 0.0f).Normalize();
 	}
@@ -80,6 +81,21 @@ CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 		float angle = math::acosf(u1.dot(u2));	         // rotation angle
 		return CQuaternion(v, angle * 0.5f).Normalize(); // half angle
 	}
+#else
+	// https://raw.org/proof/quaternion-from-two-vectors/
+
+	const auto dp = v1.dot(v2);
+	if unlikely(epscmp(dp, -1.0f, float3::cmp_eps())) {
+		// any perpendicular vector to v1/v2 will suffice
+		float3 npVec = v1.PickNonParallel();
+		const auto cp = v1.cross(npVec).Normalize();
+		return CQuaternion(cp, 0.0f);
+	}
+	else {
+		const auto cp = v1.cross(v2);
+		return CQuaternion(cp, dp + math::sqrt(dp * dp + cp.dot(cp))).Normalize();
+	}
+#endif
 }
 
 /// <summary>
@@ -240,6 +256,7 @@ CMatrix44f CQuaternion::ToRotMatrix() const
 
 float3 CQuaternion::Rotate(const float3& v) const
 {
+	assert(Normalized());
 #if 0
 	const auto vRotQ = (*this) * CQuaternion(v, 0.0f) * this->Inverse();
 	return float3{ vRotQ.x, vRotQ.y, vRotQ.z };
@@ -254,6 +271,22 @@ float3 CQuaternion::Rotate(const float3& v) const
 float4 CQuaternion::Rotate(const float4& v) const
 {
 	return float4{ Rotate(static_cast<float3>(v)), v.w };
+}
+
+bool CQuaternion::equals(const CQuaternion& rhs) const
+{
+	return
+		(
+			epscmp(x,  rhs.x, float3::cmp_eps()) &&
+			epscmp(y,  rhs.y, float3::cmp_eps()) &&
+			epscmp(z,  rhs.z, float3::cmp_eps()) &&
+			epscmp(r,  rhs.r, float3::cmp_eps())
+		) || (
+			epscmp(x, -rhs.x, float3::cmp_eps()) &&
+			epscmp(y, -rhs.y, float3::cmp_eps()) &&
+			epscmp(z, -rhs.z, float3::cmp_eps()) &&
+			epscmp(r, -rhs.r, float3::cmp_eps())
+		);
 }
 
 CQuaternion CQuaternion::Inverse() const
@@ -299,15 +332,6 @@ CQuaternion& CQuaternion::operator*=(float f)
 	r *= f;
 
 	return *this;
-}
-
-bool CQuaternion::operator==(CQuaternion& rhs) const
-{
-	return
-		epscmp(x, rhs.x, float3::cmp_eps()) &&
-		epscmp(y, rhs.y, float3::cmp_eps()) &&
-		epscmp(z, rhs.z, float3::cmp_eps()) &&
-		epscmp(r, rhs.r, float3::cmp_eps());
 }
 
 float CQuaternion::SqNorm() const {

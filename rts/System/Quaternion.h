@@ -63,6 +63,8 @@ public:
 
 	float3 Rotate(const float3& v) const;
 	float4 Rotate(const float4& v) const;
+
+	bool equals(const CQuaternion& rhs) const;
 public:
 	constexpr CQuaternion& operator= (const CQuaternion&) = default;
 	constexpr CQuaternion& operator= (CQuaternion&&) noexcept = default;
@@ -87,8 +89,8 @@ public:
 	CQuaternion operator*(const CQuaternion& rhs) const;
 	CQuaternion& operator*=(float f);
 
-	bool operator==(CQuaternion& rhs) const; //aproximate
-	bool operator!=(CQuaternion& rhs) const { return !operator==(rhs); } //aproximate
+	bool operator==(const CQuaternion& rhs) const { return  equals(rhs); } //aproximate
+	bool operator!=(const CQuaternion& rhs) const { return !equals(rhs); } //aproximate
 private:
 	float SqNorm() const;
 public:

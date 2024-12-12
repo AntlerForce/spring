@@ -1,5 +1,7 @@
 #include "Transform.hpp"
 
+#include "System/SpringMath.h"
+
 CR_BIND(Transform, )
 CR_REG_METADATA(Transform, (
 	CR_MEMBER(r),
@@ -64,19 +66,31 @@ CMatrix44f Transform::ToMatrix() const
 
 Transform Transform::InvertAffine() const
 {
+	// TODO check correctness
+	const auto invR = r.Inverse();
+	const auto invS = float4{ 1.0f / s.x, 1.0f / s.y, 1.0f / s.z, 0.0f };
 	return Transform{
-		r.Inverse(),
-		float4{ -t.x, -t.y, -t.z, t.w },
-		float4{ 1.0f / s.x, 1.0f / s.y, 1.0f / s.z, 0.0f }
+		invR,
+		invR.Rotate(-t * invS),
+		invS,
 	};
 }
 
-Transform Transform::operator*(const Transform& tra) const
+bool Transform::equals(const Transform& tra) const
+{
+	return
+		r.equals(tra.r) &&
+		t.equals(tra.t) &&
+		s.equals(tra.s);
+}
+
+Transform Transform::operator*(const Transform& childTra) const
 {
 	// TODO check correctness
+
 	return Transform{
-		r * tra.r,
-		t + r.Rotate(tra.t),
-		s * tra.s
+		r * childTra.r,
+		t + r.Rotate(s * childTra.t),
+		s * childTra.s
 	};
 }

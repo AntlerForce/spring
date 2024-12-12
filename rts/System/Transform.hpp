@@ -37,7 +37,9 @@ struct Transform {
 	// similar to CMatrix44f::InvertAffine()
 	Transform InvertAffine() const;
 
-	Transform operator*(const Transform& tra) const;
+	bool equals(const Transform& tra) const;
+
+	Transform operator*(const Transform& childTra) const;
 
 	static const Transform& Zero() {
 		static Transform zero {
