@@ -1,7 +1,6 @@
 #include "Quaternion.h"
 /* This file is part of the Spring engine (GPL v2 or later), see LICENSE.html */
 
-#include "System/Quaternion.h"
 #include "System/SpringMath.h"
 
 
@@ -9,6 +8,7 @@
 // https://github.com/ilmola/gml/blob/master/include/gml/quaternion.hpp
 // https://github.com/ilmola/gml/blob/master/include/gml/mat.hpp
 // https://github.com/g-truc/glm/blob/master/glm/ext/quaternion_common.inl
+// Also nice source https://www.shadertoy.com/view/fdtfWM
 
 CR_BIND(CQuaternion, )
 CR_REG_METADATA(CQuaternion, (
