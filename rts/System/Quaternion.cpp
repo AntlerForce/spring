@@ -55,6 +55,7 @@ CQuaternion CQuaternion::MakeFrom(float angle, const float3& axis)
 
 /// <summary>
 /// Quaternion to rotate from v1 to v2
+/// Expects v1 and v2 to be already normalized
 /// </summary>
 CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 {
@@ -84,6 +85,9 @@ CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 #else
 	// https://raw.org/proof/quaternion-from-two-vectors/
 
+	assert(v1.Normalized());
+	assert(v2.Normalized());
+
 	const auto dp = v1.dot(v2);
 	if unlikely(epscmp(dp, -1.0f, float3::cmp_eps())) {
 		// any perpendicular vector to v1/v2 will suffice
@@ -93,7 +97,7 @@ CQuaternion CQuaternion::MakeFrom(const float3& v1, const float3& v2)
 	}
 	else {
 		const auto cp = v1.cross(v2);
-		return CQuaternion(cp, dp + math::sqrt(dp * dp + cp.dot(cp))).Normalize();
+		return CQuaternion(cp, 1.0f + dp).Normalize();
 	}
 #endif
 }
