@@ -507,11 +507,11 @@ struct LocalModelPiece
 	bool GetScriptVisible() const { return scriptSetVisible; }
 	void SetScriptVisible(bool b) { scriptSetVisible = b; SetGetCustomDirty(true); }
 private:
-	float3 pos; // translation relative to parent LMP, *INITIALLY* equal to original->offset
-	float3 posSpeed; // the rate of change of pos
-	float3 rot; // orientation relative to parent LMP, in radians (updated by scripts)
-	float3 rotSpeed; // the rate of change of rot
-	float3 dir; // cached copy of original->GetEmitDir()
+	float3 pos;      // translation relative to parent LMP, *INITIALLY* equal to original->offset
+	float3 posSpeed; // the rate of change of pos, used to smooth the animation across the synced frames
+	float3 rot;      // orientation relative to parent LMP, in radians (updated by scripts)
+	float3 rotSpeed; // the rate of change of rot, used to smooth the animation across the synced frames
+	float3 dir;      // cached copy of original->GetEmitDir()
 
 	mutable Transform pieceSpaceTra; // transform relative to parent LMP (SYNCED), combines <pos> and <rot>
 	mutable Transform modelSpaceTra; // transform relative to root LMP (SYNCED), chained pieceSpaceMat's
