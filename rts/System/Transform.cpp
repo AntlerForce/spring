@@ -18,7 +18,7 @@ void Transform::FromMatrix(const CMatrix44f& mat)
 #ifdef _DEBUG
 	const float3 v{ 100, 200, 300 };
 	auto vMat = mat * v;
-	auto vTra = r.Rotate(v * s) + t;
+	auto vTra = (*this) * v;
 
 	auto vMatN = vMat; vMatN.Normalize();
 	auto vTraN = vTra; vTraN.Normalize();
@@ -54,7 +54,7 @@ CMatrix44f Transform::ToMatrix() const
 
 	const float3 v{ 100, 200, 300 };
 	auto vMat = m * v;
-	auto vTra = r.Rotate(v * s) + t;
+	auto vTra = (*this) * v;
 
 	auto vMatN = vMat; vMatN.Normalize();
 	auto vTraN = vTra; vTraN.Normalize();
@@ -93,4 +93,17 @@ Transform Transform::operator*(const Transform& childTra) const
 		t + r.Rotate(s * childTra.t),
 		s * childTra.s
 	};
+}
+
+float3 Transform::operator*(const float3& v) const
+{
+	// Scale, Rotate, Translate
+	// same order as CMatrix44f's vTra = T * R * S * v;
+	return r.Rotate(v * s) + t;
+}
+
+float4 Transform::operator*(const float4& v) const
+{
+	// same as above
+	return r.Rotate(v * s) + t;
 }

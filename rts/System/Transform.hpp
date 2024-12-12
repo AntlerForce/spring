@@ -34,19 +34,12 @@ struct Transform {
 	void FromMatrix(const CMatrix44f& mat);
 	CMatrix44f ToMatrix() const;
 
-	// similar to CMatrix44f::InvertAffine()
+	// similar to CMatrix44f::InvertAffine, except with scale()
 	Transform InvertAffine() const;
 
 	bool equals(const Transform& tra) const;
 
 	Transform operator*(const Transform& childTra) const;
-
-	static const Transform& Zero() {
-		static Transform zero {
-			CQuaternion(0.0f, 0.0f, 0.0f, 0.0f),
-			float4(0.0f, 0.0f, 0.0f, 0.0f),
-			float4(0.0f, 0.0f, 0.0f, 0.0f)
-		};
-		return zero;
-	}
+	float3 operator*(const float3& v) const;
+	float4 operator*(const float4& v) const;
 };
