@@ -265,6 +265,58 @@ void S3DModelPiece::SetPieceTransform(const Transform& parentTra)
 	}
 }
 
+Transform S3DModelPiece::ComposeTransform(const float3& t, const float3& r, const float3& s) const
+{
+	// TODO: Remove ToMatrix() / FromMatrix() non-sense
+
+	// NOTE:
+	//   ORDER MATTERS (T(baked + script) * R(baked) * R(script) * S(baked))
+	//   translating + rotating + scaling is faster than matrix-multiplying
+	//   m is identity so m.SetPos(t)==m.Translate(t) but with fewer instrs
+	Transform tra;
+	tra.t = t;
+
+	if (hasBakedTra)
+		tra *= bakedTransform;
+
+	tra *= Transform(CQuaternion::FromEulerYPRNeg(-r), ZeroVector, s);
+#ifdef _DEBUG
+	/*
+	{
+		auto rngAngles = guRNG.NextVector(2.0f * math::PI);
+		auto delMe = CQuaternion::FromEulerPYRNeg(rngAngles);
+		CMatrix44f mdel; mdel.RotateEulerXYZ(rngAngles);
+		CQuaternion delMe2;
+		std::tie(std::ignore, delMe2, std::ignore) = CQuaternion::DecomposeIntoTRS(mdel);
+		assert(delMe.equals(delMe2));
+	}
+	{
+		auto rngAngles = guRNG.NextVector(2.0f * math::PI);
+		auto delMe = CQuaternion::FromEulerYPRNeg(rngAngles);
+		CMatrix44f mdel; mdel.RotateEulerYXZ(rngAngles);
+		CQuaternion delMe2;
+		std::tie(std::ignore, delMe2, std::ignore) = CQuaternion::DecomposeIntoTRS(mdel);
+		assert(delMe.equals(delMe2));
+	}
+	*/
+	CMatrix44f m;
+	m.SetPos(t);
+
+	if (hasBakedTra)
+		m *= bakedTransform.ToMatrix();
+
+	// default Spring rotation-order [YPR=Y,X,Z]
+	m.RotateEulerYXZ(-r);
+	m.Scale(s);
+
+	Transform tra2;
+	tra2.FromMatrix(m);
+
+	assert(tra.equals(tra2));
+#endif
+	return tra;
+}
+
 
 void S3DModelPiece::PostProcessGeometry(uint32_t pieceIndex)
 {

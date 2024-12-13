@@ -162,7 +162,7 @@ struct S3DModelPiece {
 		indxStart = ~0u;
 		indxCount = ~0u;
 
-		hasBakedMat = false;
+		hasBakedTra = false;
 	}
 
 	virtual float3 GetEmitPos() const;
@@ -178,7 +178,7 @@ struct S3DModelPiece {
 	void DrawElements(GLuint prim = GL_TRIANGLES) const;
 	static void DrawShatterElements(uint32_t vboIndxStart, uint32_t vboIndxCount, GLuint prim = GL_TRIANGLES);
 
-	bool HasBackedMat() const { return hasBakedMat; }
+	bool HasBackedMat() const { return hasBakedTra; }
 public:
 	void DrawStaticLegacy(bool bind, bool bindPosMat) const;
 	void DrawStaticLegacyRec() const;
@@ -189,33 +189,11 @@ public:
 	void SetPieceTransform(const Transform& parentTra);
 	void SetBakedMatrix(const CMatrix44f& m) {
 		bakedTransform.FromMatrix(m);
-		hasBakedMat = !m.IsIdentity();
+		hasBakedTra = !m.IsIdentity();
 		assert(m.IsOrthoNormal());
 	}
 
-	auto ComposeTransform(const float3& t, const float3& r, const float3& s) const {
-		CMatrix44f m;
-
-		// TODO: Remove ToMatrix() / FromMatrix() non-sense
-
-		// NOTE:
-		//   ORDER MATTERS (T(baked + script) * R(baked) * R(script) * S(baked))
-		//   translating + rotating + scaling is faster than matrix-multiplying
-		//   m is identity so m.SetPos(t)==m.Translate(t) but with fewer instrs
-		m.SetPos(t);
-
-		if (hasBakedMat)
-			m *= bakedTransform.ToMatrix();
-
-		// default Spring rotation-order [YPR=Y,X,Z]
-		m.RotateEulerYXZ(-r);
-		m.Scale(s);
-
-		Transform tra;
-		tra.FromMatrix(m);
-
-		return tra;
-	}
+	Transform ComposeTransform(const float3& t, const float3& r, const float3& s) const;
 
 	void SetCollisionVolume(const CollisionVolume& cv) { colvol = cv; }
 	const CollisionVolume* GetCollisionVolume() const { return &colvol; }
@@ -261,7 +239,7 @@ protected:
 
 	S3DModel* model;
 
-	bool hasBakedMat;
+	bool hasBakedTra;
 public:
 	friend class CAssParser;
 };

@@ -20,35 +20,36 @@ CR_REG_METADATA(CQuaternion, (
 /// <summary>
 /// Quaternion from Euler PYR/XYZ angles
 /// </summary>
-CQuaternion CQuaternion::FromEulerPYR(const float3& pyr)
+CQuaternion CQuaternion::FromEulerPYR(const float3& angles)
 {
-	const float sp = math::sin(pyr[0] * 0.5f);
-	const float cp = math::cos(pyr[0] * 0.5f);
-	const float sy = math::sin(pyr[1] * 0.5f);
-	const float cy = math::cos(pyr[1] * 0.5f);
-	const float sr = math::sin(pyr[2] * 0.5f);
-	const float cr = math::cos(pyr[2] * 0.5f);
+	// CMatrix44f::RotateEulerXYZ defines it as (R=R(Z)*R(Y)*R(X))
+	// so R(r)*R(y)*R(p)
+
+	const float sp = math::sin(angles[CMatrix44f::ANGLE_P] * 0.5f);
+	const float cp = math::cos(angles[CMatrix44f::ANGLE_P] * 0.5f);
+	const float sy = math::sin(angles[CMatrix44f::ANGLE_Y] * 0.5f);
+	const float cy = math::cos(angles[CMatrix44f::ANGLE_Y] * 0.5f);
+	const float sr = math::sin(angles[CMatrix44f::ANGLE_R] * 0.5f);
+	const float cr = math::cos(angles[CMatrix44f::ANGLE_R] * 0.5f);
 
 	CQuaternion pyrQ{
-		cp * cy * sp + cp * sp * sy,
-		cp * cp * sy - cy * sp * sp,
-		cp * cy * cp + cp * sp * sy,
-		cp * cp * cy - sp * sp * sy
+		cr * cy * sp + cp * sr * sy,
+		cp * cr * sy - cy * sp * sr,
+		cp * cy * sr + cr * sp * sy,
+		cp * cr * cy - sp * sr * sy
 	};
 #ifdef _DEBUG
-	{
-		static constexpr auto pAxis = float3(1, 0, 0);
-		static constexpr auto yAxis = float3(0, 1, 0);
-		static constexpr auto rAxis = float3(0, 0, 1);
-		auto pyrQ2 = CQuaternion::MakeFrom(pyr[0], pAxis) * CQuaternion::MakeFrom(pyr[1], yAxis) * CQuaternion::MakeFrom(pyr[2], rAxis);
-		assert(pyrQ.equals(pyrQ2));
-	}
-	{
-		CMatrix44f m; m.RotateEulerXYZ(pyr);
-		CQuaternion pyrQ3;
-		std::tie(std::ignore, pyrQ3, std::ignore) = DecomposeIntoTRS(m);
-		assert(pyrQ.equals(pyrQ3));
-	}
+	static constexpr auto pAxis = float3(1, 0, 0);
+	static constexpr auto yAxis = float3(0, 1, 0);
+	static constexpr auto rAxis = float3(0, 0, 1);
+	auto pyrQ2 = CQuaternion::MakeFrom(angles[CMatrix44f::ANGLE_P], pAxis) * CQuaternion::MakeFrom(angles[CMatrix44f::ANGLE_Y], yAxis) * CQuaternion::MakeFrom(angles[CMatrix44f::ANGLE_R], rAxis);
+
+	CMatrix44f m; m.RotateEulerXYZ(-angles);
+	CQuaternion pyrQ3;
+	std::tie(std::ignore, pyrQ3, std::ignore) = DecomposeIntoTRS(m);
+
+	assert(pyrQ.equals(pyrQ2));
+	assert(pyrQ.equals(pyrQ3));
 #endif
 	return AssertNormalized(pyrQ);
 }
@@ -56,35 +57,36 @@ CQuaternion CQuaternion::FromEulerPYR(const float3& pyr)
 /// <summary>
 /// Quaternion from Euler YPR/YXZ angles
 /// </summary>
-CQuaternion CQuaternion::FromEulerYPR(const float3& ypr)
+CQuaternion CQuaternion::FromEulerYPR(const float3& angles)
 {
-	const float sy = math::sin(ypr[0] * 0.5f);
-	const float cy = math::cos(ypr[0] * 0.5f);
-	const float sp = math::sin(ypr[1] * 0.5f);
-	const float cp = math::cos(ypr[1] * 0.5f);
-	const float sr = math::sin(ypr[2] * 0.5f);
-	const float cr = math::cos(ypr[2] * 0.5f);
+	// CMatrix44f::RotateEulerYXZ defines it as (R=R(Z)*R(X)*R(Y))
+	// so R(r)*R(p)*R(y)
+
+	const float sp = math::sin(angles[CMatrix44f::ANGLE_P] * 0.5f);
+	const float cp = math::cos(angles[CMatrix44f::ANGLE_P] * 0.5f);
+	const float sy = math::sin(angles[CMatrix44f::ANGLE_Y] * 0.5f);
+	const float cy = math::cos(angles[CMatrix44f::ANGLE_Y] * 0.5f);
+	const float sr = math::sin(angles[CMatrix44f::ANGLE_R] * 0.5f);
+	const float cr = math::cos(angles[CMatrix44f::ANGLE_R] * 0.5f);
 
 	CQuaternion yprQ{
-		cp * cy * sp + cp * sp * sy,
-		cp * cp * sy - cy * sp * sp,
-		cp * cy * sp - cp * sp * sy,
-		cp * cp * cy + sp * sp * sy
+		cr* cy* sp + cp * sr * sy,
+		cp* cr* sy - cy * sp * sr,
+		cp* cy* sr - cr * sp * sy,
+		cp* cr* cy + sp * sr * sy
 	};
 #ifdef _DEBUG
-	{
-		static constexpr auto pAxis = float3(1, 0, 0);
-		static constexpr auto yAxis = float3(0, 1, 0);
-		static constexpr auto rAxis = float3(0, 0, 1);
-		auto yprQ2 = CQuaternion::MakeFrom(ypr[0], yAxis) * CQuaternion::MakeFrom(ypr[1], pAxis) * CQuaternion::MakeFrom(ypr[2], rAxis);
-		assert(yprQ.equals(yprQ2));
-	}
-	{
-		CMatrix44f m; m.RotateEulerYXZ(ypr);
-		CQuaternion yprQ3;
-		std::tie(std::ignore, yprQ3, std::ignore) = DecomposeIntoTRS(m);
-		assert(yprQ.equals(yprQ3));
-	}
+	static constexpr auto pAxis = float3(1, 0, 0);
+	static constexpr auto yAxis = float3(0, 1, 0);
+	static constexpr auto rAxis = float3(0, 0, 1);
+	auto yprQ2 = CQuaternion::MakeFrom(angles[CMatrix44f::ANGLE_Y], yAxis) * CQuaternion::MakeFrom(angles[CMatrix44f::ANGLE_P], pAxis) * CQuaternion::MakeFrom(angles[CMatrix44f::ANGLE_R], rAxis);
+
+	CMatrix44f m; m.RotateEulerYXZ(-angles);
+	CQuaternion yprQ3;
+	std::tie(std::ignore, yprQ3, std::ignore) = DecomposeIntoTRS(m);
+
+	assert(yprQ.equals(yprQ2));
+	assert(yprQ2.equals(yprQ3));
 #endif
 	return AssertNormalized(yprQ);
 }

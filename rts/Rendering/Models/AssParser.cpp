@@ -149,12 +149,12 @@ struct SPseudoAssPiece {
 	float3 goffset;              /// global (model-space) offset wrt. root piece
 	float3 scales = OnesVector;  /// baked uniform scaling factors (assimp-only)
 
-	bool hasBakedMat;
+	bool hasBakedTra;
 
 	// copy of S3DModelPiece::SetBakedMatrix()
 	void SetBakedMatrix(const CMatrix44f& m) {
 		bakedTransform.FromMatrix(m);
-		hasBakedMat = !m.IsIdentity();
+		hasBakedTra = !m.IsIdentity();
 		assert(m.IsOrthoNormal());
 	}
 
@@ -168,7 +168,7 @@ struct SPseudoAssPiece {
 		//   m is identity so m.SetPos(t)==m.Translate(t) but with fewer instrs
 		m.SetPos(t);
 
-		if (hasBakedMat)
+		if (hasBakedTra)
 			m *= bakedTransform.ToMatrix();
 
 		// default Spring rotation-order [YPR=Y,X,Z]

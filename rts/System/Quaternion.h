@@ -42,11 +42,15 @@ public:
 	constexpr CQuaternion(const CQuaternion& q) = default;
 	constexpr CQuaternion(CQuaternion&& q) noexcept = default;
 public:
+	// Euler angles, also known as RotateEulerXYZ, produces same rotation as CMatrix44f::RotateEulerYXZ()
+	static CQuaternion FromEulerPYRNeg(const float3& angles) { return FromEulerPYR(-angles); };
 	// Euler angles, also known as RotateEulerXYZ
-	static CQuaternion FromEulerPYR(const float3& pyr);
+	static CQuaternion FromEulerPYR(const float3& angles);
 
+	// Euler angles, also known as RotateEulerYXZ, produces same rotation as CMatrix44f::RotateEulerXYZ()
+	static CQuaternion FromEulerYPRNeg(const float3& angles) { return FromEulerYPR(-angles); };
 	// Euler angles, also known as RotateEulerYXZ
-	static CQuaternion FromEulerYPR(const float3& ypr);
+	static CQuaternion FromEulerYPR(const float3& angles);
 
 	static CQuaternion MakeFrom(float angle, const float3& axis);
 	static CQuaternion MakeFrom(const float3& v1, const float3& v2);

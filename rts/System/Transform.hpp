@@ -42,4 +42,6 @@ struct Transform {
 	Transform operator*(const Transform& childTra) const;
 	float3 operator*(const float3& v) const;
 	float4 operator*(const float4& v) const;
+
+	Transform& operator*=(const Transform& childTra) { *this = (*this) * childTra; return *this; }
 };
