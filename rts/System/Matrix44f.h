@@ -41,11 +41,11 @@ public:
 	CMatrix44f& RotateX(float angle); // (pitch) angle in radians
 	CMatrix44f& RotateY(float angle); // (  yaw) angle in radians
 	CMatrix44f& RotateZ(float angle); // ( roll) angle in radians
-	CMatrix44f& Rotate(float angle, const float3 axis); // assumes axis is normalized
-	CMatrix44f& RotateEulerXYZ(const float3 angles); // executes Rotate{X,Y,Z}
-	CMatrix44f& RotateEulerYXZ(const float3 angles); // executes Rotate{Y,X,Z}
-	CMatrix44f& RotateEulerZXY(const float3 angles); // executes Rotate{Z,X,Y}
-	CMatrix44f& RotateEulerZYX(const float3 angles); // executes Rotate{Z,Y,X}
+	CMatrix44f& Rotate(float angle, const float3& axis); // assumes axis is normalized
+	CMatrix44f& RotateEulerXYZ(const float3& angles); // executes Rotate{X,Y,Z}
+	CMatrix44f& RotateEulerYXZ(const float3& angles); // executes Rotate{Y,X,Z}
+	CMatrix44f& RotateEulerZXY(const float3& angles); // executes Rotate{Z,X,Y}
+	CMatrix44f& RotateEulerZYX(const float3& angles); // executes Rotate{Z,Y,X}
 	CMatrix44f& Translate(const float x, const float y, const float z);
 	CMatrix44f& Translate(const float3& pos) { return Translate(pos.x, pos.y, pos.z); }
 	CMatrix44f& Scale(const float3& scales);

@@ -1,8 +1,7 @@
+/* This file is part of the Recoil engine (GPL v2 or later), see LICENSE.html */
+
 #include "Quaternion.h"
-/* This file is part of the Spring engine (GPL v2 or later), see LICENSE.html */
-
 #include "System/SpringMath.h"
-
 
 //contains some code from
 // https://github.com/ilmola/gml/blob/master/include/gml/quaternion.hpp
@@ -19,27 +18,75 @@ CR_REG_METADATA(CQuaternion, (
 ))
 
 /// <summary>
-/// Quaternion from Euler angles
+/// Quaternion from Euler PYR/XYZ angles
 /// </summary>
-CQuaternion CQuaternion::MakeFrom(const float3& euler)
+CQuaternion CQuaternion::FromEulerPYR(const float3& pyr)
 {
-	const float a1 = 0.5f * euler.x;
-	const float a2 = 0.5f * euler.y;
-	const float a3 = 0.5f * euler.z;
+	const float sp = math::sin(pyr[0] * 0.5f);
+	const float cp = math::cos(pyr[0] * 0.5f);
+	const float sy = math::sin(pyr[1] * 0.5f);
+	const float cy = math::cos(pyr[1] * 0.5f);
+	const float sr = math::sin(pyr[2] * 0.5f);
+	const float cr = math::cos(pyr[2] * 0.5f);
 
-	const float sx = math::sin(a1);
-	const float cx = math::cos(a1);
-	const float sy = math::sin(a2);
-	const float cy = math::cos(a2);
-	const float sz = math::sin(a3);
-	const float cz = math::cos(a3);
+	CQuaternion pyrQ{
+		cp * cy * sp + cp * sp * sy,
+		cp * cp * sy - cy * sp * sp,
+		cp * cy * cp + cp * sp * sy,
+		cp * cp * cy - sp * sp * sy
+	};
+#ifdef _DEBUG
+	{
+		static constexpr auto pAxis = float3(1, 0, 0);
+		static constexpr auto yAxis = float3(0, 1, 0);
+		static constexpr auto rAxis = float3(0, 0, 1);
+		auto pyrQ2 = CQuaternion::MakeFrom(pyr[0], pAxis) * CQuaternion::MakeFrom(pyr[1], yAxis) * CQuaternion::MakeFrom(pyr[2], rAxis);
+		assert(pyrQ.equals(pyrQ2));
+	}
+	{
+		CMatrix44f m; m.RotateEulerXYZ(pyr);
+		CQuaternion pyrQ3;
+		std::tie(std::ignore, pyrQ3, std::ignore) = DecomposeIntoTRS(m);
+		assert(pyrQ.equals(pyrQ3));
+	}
+#endif
+	return AssertNormalized(pyrQ);
+}
 
-	return AssertNormalized(CQuaternion(
-		cy * cz * sx - cx * sy * sz,
-		cx * cz * sy + cy * sx * sz,
-		cx * cy * sz - cz * sx * sy,
-		cx * cy * cz + sx * sy * sz
-	));
+/// <summary>
+/// Quaternion from Euler YPR/YXZ angles
+/// </summary>
+CQuaternion CQuaternion::FromEulerYPR(const float3& ypr)
+{
+	const float sy = math::sin(ypr[0] * 0.5f);
+	const float cy = math::cos(ypr[0] * 0.5f);
+	const float sp = math::sin(ypr[1] * 0.5f);
+	const float cp = math::cos(ypr[1] * 0.5f);
+	const float sr = math::sin(ypr[2] * 0.5f);
+	const float cr = math::cos(ypr[2] * 0.5f);
+
+	CQuaternion yprQ{
+		cp * cy * sp + cp * sp * sy,
+		cp * cp * sy - cy * sp * sp,
+		cp * cy * sp - cp * sp * sy,
+		cp * cp * cy + sp * sp * sy
+	};
+#ifdef _DEBUG
+	{
+		static constexpr auto pAxis = float3(1, 0, 0);
+		static constexpr auto yAxis = float3(0, 1, 0);
+		static constexpr auto rAxis = float3(0, 0, 1);
+		auto yprQ2 = CQuaternion::MakeFrom(ypr[0], yAxis) * CQuaternion::MakeFrom(ypr[1], pAxis) * CQuaternion::MakeFrom(ypr[2], rAxis);
+		assert(yprQ.equals(yprQ2));
+	}
+	{
+		CMatrix44f m; m.RotateEulerYXZ(ypr);
+		CQuaternion yprQ3;
+		std::tie(std::ignore, yprQ3, std::ignore) = DecomposeIntoTRS(m);
+		assert(yprQ.equals(yprQ3));
+	}
+#endif
+	return AssertNormalized(yprQ);
 }
 
 /// <summary>

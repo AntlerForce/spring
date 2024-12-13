@@ -1,5 +1,4 @@
-/* This file is part of the Spring engine (GPL v2 or later), see LICENSE.html */
-
+/* This file is part of the Recoil engine (GPL v2 or later), see LICENSE.html */
 #pragma once
 
 #include <cmath>
@@ -43,7 +42,12 @@ public:
 	constexpr CQuaternion(const CQuaternion& q) = default;
 	constexpr CQuaternion(CQuaternion&& q) noexcept = default;
 public:
-	static CQuaternion MakeFrom(const float3& euler);
+	// Euler angles, also known as RotateEulerXYZ
+	static CQuaternion FromEulerPYR(const float3& pyr);
+
+	// Euler angles, also known as RotateEulerYXZ
+	static CQuaternion FromEulerYPR(const float3& ypr);
+
 	static CQuaternion MakeFrom(float angle, const float3& axis);
 	static CQuaternion MakeFrom(const float3& v1, const float3& v2);
 	static CQuaternion MakeFrom(const CMatrix44f& mat);
