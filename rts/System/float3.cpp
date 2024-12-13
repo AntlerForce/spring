@@ -14,6 +14,19 @@ CR_REG_METADATA(float3, (CR_MEMBER(x), CR_MEMBER(y), CR_MEMBER(z)))
 float float3::maxxpos = -1.0f;
 float float3::maxzpos = -1.0f;
 
+float3 float3::PickNonParallel() const
+{
+	// https://math.stackexchange.com/questions/3122010/how-to-deterministically-pick-a-vector-that-is-guaranteed-to-be-non-parallel-to
+	auto mi = std::min_element(std::begin(xyz), std::end(xyz), [](const auto& a, const auto& b) { return math::fabs(a) < math::fabs(b); });
+	auto Mi = std::max_element(std::begin(xyz), std::end(xyz), [](const auto& a, const auto& b) { return math::fabs(a) > math::fabs(b); });
+	float3 npVec{ 0.0f };
+	npVec.xyz[std::distance(std::begin(xyz), mi)] = *Mi;
+
+	// don't normalize as it most likely will go as argument to cross,
+	// and the cross result will need to be normalized anyway
+	return npVec;
+}
+
 bool float3::IsInBounds() const
 {
 	assert(maxxpos > 0.0f); // check if initialized

@@ -752,17 +752,7 @@ public:
 	*/
 
 	// deterministically pick a non-parallel vector to the current one
-	float3 PickNonParallel() const {
-		// https://math.stackexchange.com/questions/3122010/how-to-deterministically-pick-a-vector-that-is-guaranteed-to-be-non-parallel-to
-		auto mi = std::min_element(std::begin(xyz), std::end(xyz), [](const auto& a, const auto& b) { return math::fabs(a) < math::fabs(b); });
-		auto Mi = std::max_element(std::begin(xyz), std::end(xyz), [](const auto& a, const auto& b) { return math::fabs(a) > math::fabs(b); });
-		float3 npVec{ 0.0f };
-		npVec.xyz[std::distance(std::begin(xyz), mi)] = *Mi;
-
-		// don't normalize as it most likely will go as argument to cross,
-		// and the cross result will need to be normalized anyway
-		return npVec;
-	}
+	float3 PickNonParallel() const;
 
 	bool Normalized() const { return math::fabs(1.0f - SqLength()) <= cmp_eps(); }
 	static bool CheckNaN(float c) { return (!math::isnan(c) && !math::isinf(c)); }
