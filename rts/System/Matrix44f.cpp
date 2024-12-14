@@ -25,7 +25,7 @@ CMatrix44f::CMatrix44f(const CMatrix44f& mat)
 }
 
 
-CMatrix44f::CMatrix44f(const float3 pos, const float3 x, const float3 y, const float3 z)
+CMatrix44f::CMatrix44f(const float3& pos, const float3& x, const float3& y, const float3& z)
 {
 	// column-major!
 	m[0] = x.x;   m[4] = y.x;   m[ 8] = z.x;   m[12] = pos.x;
@@ -34,13 +34,13 @@ CMatrix44f::CMatrix44f(const float3 pos, const float3 x, const float3 y, const f
 	m[3] = 0.0f;  m[7] = 0.0f;  m[11] = 0.0f;  m[15] = 1.0f;
 }
 
-CMatrix44f::CMatrix44f(const float rotX, const float rotY, const float rotZ)
+CMatrix44f::CMatrix44f(float rotX, float rotY, float rotZ)
 {
 	LoadIdentity();
 	RotateEulerXYZ(float3(rotX, rotY, rotZ));
 }
 
-CMatrix44f::CMatrix44f(const float3 p)
+CMatrix44f::CMatrix44f(const float3& p)
 {
 	LoadIdentity();
 	SetPos(p);

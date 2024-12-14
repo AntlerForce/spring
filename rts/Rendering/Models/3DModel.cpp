@@ -608,13 +608,13 @@ void LocalModelPiece::UpdateChildTransformRec(bool updateChildTransform) const
 
 		if (parent != nullptr) {
 			// TODO remove the non-sense
-			auto modelSpaceTraOrig = modelSpaceTra;
-			auto modelSpaceTra2 = parent->modelSpaceTra * modelSpaceTra;
+			const auto modelSpaceTraOrig = modelSpaceTra;
+			modelSpaceTra = parent->modelSpaceTra * modelSpaceTra;
 
-			CMatrix44f thisModelSpaceMat = modelSpaceTra.ToMatrix();
+			CMatrix44f thisModelSpaceMat = modelSpaceTraOrig.ToMatrix();
 			const CMatrix44f prntModelSpaceMat = parent->modelSpaceTra.ToMatrix();
 			thisModelSpaceMat >>= prntModelSpaceMat;
-			modelSpaceTra.FromMatrix(thisModelSpaceMat);
+			Transform modelSpaceTra2; modelSpaceTra2.FromMatrix(thisModelSpaceMat);
 
 			assert(modelSpaceTra.equals(modelSpaceTra2));
 		}
@@ -638,13 +638,13 @@ void LocalModelPiece::UpdateParentMatricesRec() const
 
 	if (parent != nullptr) {
 		// TODO remove the non-sense
-		auto modelSpaceTraOrig = modelSpaceTra;
-		auto modelSpaceTra2 = parent->modelSpaceTra * modelSpaceTra;
+		const auto modelSpaceTraOrig = modelSpaceTra;
+		modelSpaceTra = parent->modelSpaceTra * modelSpaceTra;
 
-		CMatrix44f thisModelSpaceMat = modelSpaceTra.ToMatrix();
+		CMatrix44f thisModelSpaceMat = modelSpaceTraOrig.ToMatrix();
 		const CMatrix44f prntModelSpaceMat = parent->modelSpaceTra.ToMatrix();
 		thisModelSpaceMat >>= prntModelSpaceMat;
-		modelSpaceTra.FromMatrix(thisModelSpaceMat);
+		Transform modelSpaceTra2; modelSpaceTra2.FromMatrix(thisModelSpaceMat);
 
 		assert(modelSpaceTra.equals(modelSpaceTra2));
 	}

@@ -24,9 +24,9 @@ public:
 		const float  m8, const float  m9, const float m10, const float m11,
 		const float m12, const float m13, const float m14, const float m15) : m{m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15} {};
 
-	CMatrix44f(const float3 pos, const float3 x, const float3 y, const float3 z);
-	CMatrix44f(const float rotX, const float rotY, const float rotZ);
-	explicit CMatrix44f(const float3 pos);
+	explicit CMatrix44f(const float3& pos, const float3& x, const float3& y, const float3& z);
+	explicit CMatrix44f(float rotX, float rotY, float rotZ);
+	explicit CMatrix44f(const float3& pos);
 
 	bool IsOrthoNormal() const;
 	bool IsIdentity() const;
@@ -51,10 +51,10 @@ public:
 	CMatrix44f& Scale(const float3& scales);
 	CMatrix44f& Scale(float scaleX, float scaleY, float scaleZ) { return Scale(float3{ scaleX, scaleY, scaleZ }); }
 
-	void SetPos(const float3 pos) { m[12] = pos.x; m[13] = pos.y; m[14] = pos.z; }
-	void SetX  (const float3 dir) { m[ 0] = dir.x; m[ 1] = dir.y; m[ 2] = dir.z; }
-	void SetY  (const float3 dir) { m[ 4] = dir.x; m[ 5] = dir.y; m[ 6] = dir.z; }
-	void SetZ  (const float3 dir) { m[ 8] = dir.x; m[ 9] = dir.y; m[10] = dir.z; }
+	void SetPos(const float3& pos) { m[12] = pos.x; m[13] = pos.y; m[14] = pos.z; }
+	void SetX  (const float3& dir) { m[ 0] = dir.x; m[ 1] = dir.y; m[ 2] = dir.z; }
+	void SetY  (const float3& dir) { m[ 4] = dir.x; m[ 5] = dir.y; m[ 6] = dir.z; }
+	void SetZ  (const float3& dir) { m[ 8] = dir.x; m[ 9] = dir.y; m[10] = dir.z; }
 	void SetXYZ(const CMatrix44f& other) {
 		std::copy(&other.m[0], &other.m[0] + 3, &m[0]);
 		std::copy(&other.m[4], &other.m[4] + 3, &m[4]);
