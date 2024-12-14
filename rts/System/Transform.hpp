@@ -31,6 +31,8 @@ struct Transform {
 		s = 1.0f;
 	}
 
+	bool IsIdentity() const;
+
 	static Transform FromMatrix(const CMatrix44f& mat);
 	CMatrix44f ToMatrix() const;
 

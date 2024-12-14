@@ -151,11 +151,9 @@ struct SPseudoAssPiece {
 
 	bool hasBakedTra;
 
-	// copy of S3DModelPiece::SetBakedMatrix()
-	void SetBakedMatrix(const CMatrix44f& m) {
-		bakedTransform = Transform::FromMatrix(m);
-		hasBakedTra = !m.IsIdentity();
-		assert(m.IsOrthoNormal());
+	// copy of S3DModelPiece::SetBakedTransform()
+	void SetBakedTransform(const Transform& tra) {
+		hasBakedTra = !tra.IsIdentity();
 	}
 
 	// copy of S3DModelPiece::ComposeTransform()
@@ -518,7 +516,14 @@ namespace {
 		// and <scales> so the baked part reduces to R
 		//
 		// note: for all non-AssImp models this is identity!
-		piece->SetBakedMatrix(bakedMatrix.RotateEulerYXZ(-bakedRotAngles));
+
+		Transform bakedTransform(CQuaternion::FromEulerYPRNeg(-bakedRotAngles) * CQuaternion(aiRotateQuat.x, aiRotateQuat.y, aiRotateQuat.z, aiRotateQuat.w), ZeroVector, 1.0f);
+		piece->SetBakedTransform(bakedTransform);
+#ifdef _DEBUG
+		Transform bakedTransform2 = Transform::FromMatrix(bakedMatrix);
+		assert(bakedTransform.equals(bakedTransform2));
+#endif // _DEBUG
+
 	}
 }
 

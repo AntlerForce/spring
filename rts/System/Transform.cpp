@@ -12,6 +12,12 @@ CR_REG_METADATA(Transform, (
 static_assert(sizeof (Transform) == 2 * 4 * sizeof(float));
 static_assert(alignof(Transform) == alignof(decltype(Transform::r)));
 
+bool Transform::IsIdentity() const
+{
+	static constexpr Transform Identity;
+	return this->equals(Identity);
+}
+
 Transform Transform::FromMatrix(const CMatrix44f& mat)
 {
 	Transform tra;

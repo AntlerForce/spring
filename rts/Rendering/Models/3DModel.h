@@ -187,10 +187,9 @@ public:
 	void Shatter(float, int, int, int, const float3, const float3, const CMatrix44f&) const;
 
 	void SetPieceTransform(const Transform& parentTra);
-	void SetBakedMatrix(const CMatrix44f& m) {
-		bakedTransform = Transform::FromMatrix(m);
-		hasBakedTra = !m.IsIdentity();
-		assert(m.IsOrthoNormal());
+	void SetBakedTransform(const Transform& tra) {
+		bakedTransform = tra;
+		hasBakedTra = !tra.IsIdentity();
 	}
 
 	Transform ComposeTransform(const float3& t, const float3& r, float s) const;
