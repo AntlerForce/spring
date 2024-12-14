@@ -13,9 +13,9 @@
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Objects/SolidObjectDef.h"
 
-class MatricesMemStorage : public StablePosAllocator<CMatrix44f> {
+class TransformsMemStorage : public StablePosAllocator<CMatrix44f> {
 public:
-	explicit MatricesMemStorage()
+	explicit TransformsMemStorage()
 		: StablePosAllocator<CMatrix44f>(INIT_NUM_ELEMS)
 		, dirtyMap(INIT_NUM_ELEMS, BUFFERING)
 	{}
@@ -68,31 +68,31 @@ private:
 	static constexpr int INIT_NUM_ELEMS = 1 << 16u;
 };
 
-extern MatricesMemStorage matricesMemStorage;
+extern TransformsMemStorage transformsMemStorage;
 
 
 ////////////////////////////////////////////////////////////////////
 
-class ScopedMatricesMemAlloc {
+class ScopedTransformMemAlloc {
 public:
-	ScopedMatricesMemAlloc() : ScopedMatricesMemAlloc(0u) {};
-	ScopedMatricesMemAlloc(std::size_t numElems_)
+	ScopedTransformMemAlloc() : ScopedTransformMemAlloc(0u) {};
+	ScopedTransformMemAlloc(std::size_t numElems_)
 		: numElems{numElems_}
 	{
-		firstElem = matricesMemStorage.Allocate(numElems);
+		firstElem = transformsMemStorage.Allocate(numElems);
 	}
 
-	ScopedMatricesMemAlloc(const ScopedMatricesMemAlloc&) = delete;
-	ScopedMatricesMemAlloc(ScopedMatricesMemAlloc&& smma) noexcept { *this = std::move(smma); }
+	ScopedTransformMemAlloc(const ScopedTransformMemAlloc&) = delete;
+	ScopedTransformMemAlloc(ScopedTransformMemAlloc&& smma) noexcept { *this = std::move(smma); }
 
-	~ScopedMatricesMemAlloc() {
-		if (firstElem == MatricesMemStorage::INVALID_INDEX)
+	~ScopedTransformMemAlloc() {
+		if (firstElem == TransformsMemStorage::INVALID_INDEX)
 			return;
 
-		matricesMemStorage.Free(firstElem, numElems, &CMatrix44f::Zero());
+		transformsMemStorage.Free(firstElem, numElems, &CMatrix44f::Zero());
 	}
 
-	bool Valid() const { return firstElem != MatricesMemStorage::INVALID_INDEX;	}
+	bool Valid() const { return firstElem != TransformsMemStorage::INVALID_INDEX;	}
 	std::size_t GetOffset(bool assertInvalid = true) const {
 		if (assertInvalid)
 			assert(Valid());
@@ -100,8 +100,8 @@ public:
 		return firstElem;
 	}
 
-	ScopedMatricesMemAlloc& operator= (const ScopedMatricesMemAlloc&) = delete;
-	ScopedMatricesMemAlloc& operator= (ScopedMatricesMemAlloc&& smma) noexcept {
+	ScopedTransformMemAlloc& operator= (const ScopedTransformMemAlloc&) = delete;
+	ScopedTransformMemAlloc& operator= (ScopedTransformMemAlloc&& smma) noexcept {
 		//swap to prevent dealloc on dying object, yet enable destructor to do its thing on valid object
 		std::swap(firstElem, smma.firstElem);
 		std::swap(numElems , smma.numElems );
@@ -110,35 +110,35 @@ public:
 	}
 
 	const CMatrix44f& operator[](std::size_t offset) const {
-		assert(firstElem != MatricesMemStorage::INVALID_INDEX);
+		assert(firstElem != TransformsMemStorage::INVALID_INDEX);
 		assert(offset >= 0 && offset < numElems);
 
-		return matricesMemStorage[firstElem + offset];
+		return transformsMemStorage[firstElem + offset];
 	}
 	CMatrix44f& operator[](std::size_t offset) {
-		assert(firstElem != MatricesMemStorage::INVALID_INDEX);
+		assert(firstElem != TransformsMemStorage::INVALID_INDEX);
 		assert(offset >= 0 && offset < numElems);
 
-		matricesMemStorage.GetDirtyMap().at(firstElem + offset) = MatricesMemStorage::BUFFERING;
-		return matricesMemStorage[firstElem + offset];
+		transformsMemStorage.GetDirtyMap().at(firstElem + offset) = TransformsMemStorage::BUFFERING;
+		return transformsMemStorage[firstElem + offset];
 	}
 public:
-	static const ScopedMatricesMemAlloc& Dummy() {
-		static ScopedMatricesMemAlloc dummy;
+	static const ScopedTransformMemAlloc& Dummy() {
+		static ScopedTransformMemAlloc dummy;
 
 		return dummy;
 	};
 private:
-	std::size_t firstElem = MatricesMemStorage::INVALID_INDEX;
+	std::size_t firstElem = TransformsMemStorage::INVALID_INDEX;
 	std::size_t numElems  = 0u;
 };
 
 ////////////////////////////////////////////////////////////////////
 
 class CWorldObject;
-class ModelsUniformsStorage {
+class ModelUniformsStorage {
 public:
-	ModelsUniformsStorage();
+	ModelUniformsStorage();
 public:
 	size_t AddObjects(const CWorldObject* o);
 	void   DelObjects(const CWorldObject* o);
@@ -166,4 +166,4 @@ private:
 	spring::FreeListMap<ModelUniformData> storage;
 };
 
-extern ModelsUniformsStorage modelsUniformsStorage;
+extern ModelUniformsStorage modelUniformsStorage;

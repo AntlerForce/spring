@@ -69,18 +69,18 @@ public:
 
 	void ClearPreviousDrawFlags() { for (auto object : unsortedObjects) object->previousDrawFlag = 0; }
 
-	const ScopedMatricesMemAlloc& GetObjectMatricesMemAlloc(const T* o) const {
+	const ScopedTransformMemAlloc& GetObjectTransformMemAlloc(const T* o) const {
 		const auto it = matricesMemAllocs.find(const_cast<T*>(o));
-		return (it != matricesMemAllocs.end()) ? it->second : ScopedMatricesMemAlloc::Dummy();
+		return (it != matricesMemAllocs.end()) ? it->second : ScopedTransformMemAlloc::Dummy();
 	}
-	ScopedMatricesMemAlloc& GetObjectMatricesMemAlloc(const T* o) { return matricesMemAllocs[const_cast<T*>(o)]; }
+	ScopedTransformMemAlloc& GetObjectTransformMemAlloc(const T* o) { return matricesMemAllocs[const_cast<T*>(o)]; }
 private:
 	static constexpr int MMA_SIZE0 = 2 << 16;
 protected:
 	std::array<ModelRenderContainer<T>, MODELTYPE_CNT> modelRenderers;
 
 	std::vector<T*> unsortedObjects;
-	std::unordered_map<T*, ScopedMatricesMemAlloc> matricesMemAllocs;
+	std::unordered_map<T*, ScopedTransformMemAlloc> matricesMemAllocs;
 
 	bool& mtModelDrawer;
 };
@@ -126,9 +126,9 @@ inline void CModelDrawerDataBase<T>::AddObject(const T* co, bool add)
 	unsortedObjects.emplace_back(o);
 
 	const uint32_t numMatrices = (o->model ? o->model->numPieces : 0) + 1u;
-	matricesMemAllocs.emplace(o, ScopedMatricesMemAlloc(numMatrices));
+	matricesMemAllocs.emplace(o, ScopedTransformMemAlloc(numMatrices));
 
-	modelsUniformsStorage.GetObjOffset(co);
+	modelUniformsStorage.GetObjOffset(co);
 }
 
 template<typename T>
@@ -142,7 +142,7 @@ inline void CModelDrawerDataBase<T>::DelObject(const T* co, bool del)
 
 	if (del && spring::VectorErase(unsortedObjects, o)) {
 		matricesMemAllocs.erase(o);
-		modelsUniformsStorage.GetObjOffset(co);
+		modelUniformsStorage.GetObjOffset(co);
 	}
 }
 
@@ -157,13 +157,13 @@ inline void CModelDrawerDataBase<T>::UpdateObject(const T* co, bool init)
 template<typename T>
 inline void CModelDrawerDataBase<T>::UpdateObjectSMMA(const T* o)
 {
-	ScopedMatricesMemAlloc& smma = GetObjectMatricesMemAlloc(o);
+	ScopedTransformMemAlloc& smma = GetObjectTransformMemAlloc(o);
 
 	const auto  tmNew = o->GetTransformMatrix();
-	const auto& tmOld = const_cast<const ScopedMatricesMemAlloc&>(smma)[0];
+	const auto& tmOld = const_cast<const ScopedTransformMemAlloc&>(smma)[0];
 
 	// from one point it doesn't worth the comparison, cause units usually move
-	// but having not updated smma[0] allows for longer solid no-update areas in ModelsUniformsUploader::UpdateDerived()
+	// but having not updated smma[0] allows for longer solid no-update areas in ModelUniformsUploader::UpdateDerived()
 	if (tmNew != tmOld)
 		smma[0] = tmNew;
 
@@ -186,7 +186,7 @@ inline void CModelDrawerDataBase<T>::UpdateObjectSMMA(const T* o)
 template<typename T>
 inline void CModelDrawerDataBase<T>::UpdateObjectUniforms(const T* o)
 {
-	auto& uni = modelsUniformsStorage.GetObjUniformsArray(o);
+	auto& uni = modelUniformsStorage.GetObjUniformsArray(o);
 	uni.drawFlag = o->drawFlag;
 
 	if (gu->spectatingFullView || o->IsInLosForAllyTeam(gu->myAllyTeam)) {

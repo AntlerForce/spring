@@ -69,7 +69,7 @@ protected:
 	std::unique_ptr<IStreamBuffer<T>> ssbo;
 };
 
-class MatrixUploader : public TypedStorageBufferUploader<CMatrix44f, MatrixUploader> {
+class TransformsUploader : public TypedStorageBufferUploader<CMatrix44f, TransformsUploader> {
 public:
 	void InitDerived();
 	void KillDerived();
@@ -87,7 +87,7 @@ private:
 	static constexpr uint32_t ELEM_COUNTI = 1u << 12;
 };
 
-class ModelsUniformsUploader : public TypedStorageBufferUploader<ModelUniformData, ModelsUniformsUploader> {
+class ModelUniformsUploader : public TypedStorageBufferUploader<ModelUniformData, ModelUniformsUploader> {
 public:
 	void InitDerived();
 	void KillDerived();
@@ -105,5 +105,5 @@ private:
 	static constexpr uint32_t ELEM_COUNTI = 1u << 11;
 };
 
-#define matrixUploader MatrixUploader::GetInstance()
-#define modelsUniformsUploader ModelsUniformsUploader::GetInstance()
+#define transformsUploader TransformsUploader::GetInstance()
+#define modelUniformsUploader ModelUniformsUploader::GetInstance()

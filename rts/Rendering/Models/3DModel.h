@@ -271,7 +271,7 @@ struct S3DModel
 		, loadStatus(NOTLOADED)
 		, uploaded(false)
 
-		, matAlloc(ScopedMatricesMemAlloc())
+		, traAlloc(ScopedTransformMemAlloc())
 	{}
 
 	S3DModel(const S3DModel& m) = delete;
@@ -307,7 +307,7 @@ struct S3DModel
 		loadStatus = m.loadStatus;
 		uploaded = m.uploaded;
 
-		std::swap(matAlloc, m.matAlloc);
+		std::swap(traAlloc, m.traAlloc);
 
 		return *this;
 	}
@@ -342,7 +342,7 @@ struct S3DModel
 
 		// force mutex just in case this is called from modelLoader.ProcessVertices()
 		// TODO: pass to S3DModel if it is created from LoadModel(ST) or from ProcessVertices(MT)
-		matAlloc = ScopedMatricesMemAlloc(2 * numPieces);
+		traAlloc = ScopedTransformMemAlloc(2 * numPieces);
 
 		std::vector<S3DModelPiece*> stack = { root };
 
@@ -368,7 +368,7 @@ struct S3DModel
 	float3 CalcDrawMidPos() const { return ((maxs + mins) * 0.5f); }
 	float3 GetDrawMidPos() const { return relMidPos; }
 
-	const ScopedMatricesMemAlloc& GetMatAlloc() const { return matAlloc; }
+	const ScopedTransformMemAlloc& GetMatAlloc() const { return traAlloc; }
 public:
 	std::string name;
 	std::array<std::string, NUM_MODEL_TEXTURES> texs;
@@ -395,7 +395,7 @@ public:
 	LoadStatus loadStatus;
 	bool uploaded;
 private:
-	ScopedMatricesMemAlloc matAlloc;
+	ScopedTransformMemAlloc traAlloc;
 };
 
 

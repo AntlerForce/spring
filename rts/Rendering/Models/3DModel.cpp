@@ -763,13 +763,13 @@ void S3DModel::SetPieceMatrices()
 	// use this occasion and copy bpose matrices
 	for (size_t i = 0; i < pieceObjects.size(); ++i) {
 		const auto* po = pieceObjects[i];
-		matAlloc[0         + i] = po->bposeTransform.ToMatrix();
+		traAlloc[0         + i] = po->bposeTransform.ToMatrix();
 	}
 
 	// use this occasion and copy inverse bpose matrices
 	// store them right after all bind pose matrices
 	for (size_t i = 0; i < pieceObjects.size(); ++i) {
 		const auto* po = pieceObjects[i];
-		matAlloc[numPieces + i] = po->bposeInvTransform.ToMatrix();
+		traAlloc[numPieces + i] = po->bposeInvTransform.ToMatrix();
 	}
 }
