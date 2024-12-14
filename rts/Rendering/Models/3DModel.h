@@ -178,7 +178,7 @@ struct S3DModelPiece {
 	void DrawElements(GLuint prim = GL_TRIANGLES) const;
 	static void DrawShatterElements(uint32_t vboIndxStart, uint32_t vboIndxCount, GLuint prim = GL_TRIANGLES);
 
-	bool HasBackedMat() const { return hasBakedTra; }
+	bool HasBackedTra() const { return hasBakedTra; }
 public:
 	void DrawStaticLegacy(bool bind, bool bindPosMat) const;
 	void DrawStaticLegacyRec() const;
