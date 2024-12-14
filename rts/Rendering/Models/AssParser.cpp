@@ -153,7 +153,7 @@ struct SPseudoAssPiece {
 
 	// copy of S3DModelPiece::SetBakedMatrix()
 	void SetBakedMatrix(const CMatrix44f& m) {
-		bakedTransform.FromMatrix(m);
+		bakedTransform = Transform::FromMatrix(m);
 		hasBakedTra = !m.IsIdentity();
 		assert(m.IsOrthoNormal());
 	}

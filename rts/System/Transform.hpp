@@ -31,7 +31,7 @@ struct Transform {
 		s = float4(1.0f, 1.0f, 1.0f, 0.0f);
 	}
 
-	void FromMatrix(const CMatrix44f& mat);
+	static Transform FromMatrix(const CMatrix44f& mat);
 	CMatrix44f ToMatrix() const;
 
 	// similar to CMatrix44f::InvertAffine, except with scale()

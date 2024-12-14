@@ -256,7 +256,7 @@ void S3DModelPiece::SetPieceTransform(const Transform& parentTra)
 #ifdef _DEBUG
 	auto bposeMat = bposeTransform.ToMatrix();
 	auto bposeInvMat = bposeMat.Invert();
-	Transform bposeInvTransform2; bposeInvTransform2.FromMatrix(bposeInvMat);
+	auto bposeInvTransform2 = Transform::FromMatrix(bposeInvMat);
 	assert(bposeInvTransform.equals(bposeInvTransform2));
 #endif // _DEBUG
 
@@ -309,8 +309,7 @@ Transform S3DModelPiece::ComposeTransform(const float3& t, const float3& r, cons
 	m.RotateEulerYXZ(-r);
 	m.Scale(s);
 
-	Transform tra2;
-	tra2.FromMatrix(m);
+	auto tra2 = Transform::FromMatrix(m);
 
 	assert(tra.equals(tra2));
 #endif
@@ -588,7 +587,7 @@ void LocalModelPiece::UpdateChildTransformRec(bool updateChildTransform) const
 
 		const auto cMatUpd2 = cTraUpd.ToMatrix();
 
-		//Transform cTraUpd2; cTraUpd2.FromMatrix(cMatUpd);
+		auto cTraUpd2 = Transform::FromMatrix(cMatUpd);
 
 		//assert(cTraUpd.equals(cTraUpd2));
 
@@ -614,7 +613,7 @@ void LocalModelPiece::UpdateChildTransformRec(bool updateChildTransform) const
 			CMatrix44f thisModelSpaceMat = modelSpaceTraOrig.ToMatrix();
 			const CMatrix44f prntModelSpaceMat = parent->modelSpaceTra.ToMatrix();
 			thisModelSpaceMat >>= prntModelSpaceMat;
-			Transform modelSpaceTra2; modelSpaceTra2.FromMatrix(thisModelSpaceMat);
+			auto modelSpaceTra2 = Transform::FromMatrix(thisModelSpaceMat);
 
 			assert(modelSpaceTra.equals(modelSpaceTra2));
 		}
@@ -644,7 +643,7 @@ void LocalModelPiece::UpdateParentMatricesRec() const
 		CMatrix44f thisModelSpaceMat = modelSpaceTraOrig.ToMatrix();
 		const CMatrix44f prntModelSpaceMat = parent->modelSpaceTra.ToMatrix();
 		thisModelSpaceMat >>= prntModelSpaceMat;
-		Transform modelSpaceTra2; modelSpaceTra2.FromMatrix(thisModelSpaceMat);
+		auto modelSpaceTra2 = Transform::FromMatrix(thisModelSpaceMat);
 
 		assert(modelSpaceTra.equals(modelSpaceTra2));
 	}

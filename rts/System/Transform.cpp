@@ -12,19 +12,21 @@ CR_REG_METADATA(Transform, (
 static_assert(sizeof(Transform) == 3 * 4 * sizeof(float));
 static_assert(alignof(Transform) == alignof(decltype(Transform::r)));
 
-void Transform::FromMatrix(const CMatrix44f& mat)
+Transform Transform::FromMatrix(const CMatrix44f& mat)
 {
-	std::tie(t, r, s) = CQuaternion::DecomposeIntoTRS(mat);
+	Transform tra;
+	std::tie(tra.t, tra.r, tra.s) = CQuaternion::DecomposeIntoTRS(mat);
 #ifdef _DEBUG
 	const float3 v{ 100, 200, 300 };
 	auto vMat = mat * v;
-	auto vTra = (*this) * v;
+	auto vTra = tra * v;
 
 	auto vMatN = vMat; vMatN.Normalize();
 	auto vTraN = vTra; vTraN.Normalize();
 
 	assert(math::fabs(1.0f - vMatN.dot(vTraN)) < 0.05f);
 #endif
+	return tra;
 }
 
 CMatrix44f Transform::ToMatrix() const

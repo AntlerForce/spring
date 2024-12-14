@@ -188,7 +188,7 @@ public:
 
 	void SetPieceTransform(const Transform& parentTra);
 	void SetBakedMatrix(const CMatrix44f& m) {
-		bakedTransform.FromMatrix(m);
+		bakedTransform = Transform::FromMatrix(m);
 		hasBakedTra = !m.IsIdentity();
 		assert(m.IsOrthoNormal());
 	}
@@ -457,7 +457,7 @@ struct LocalModelPiece
 
 	bool SetPieceSpaceMatrix(const CMatrix44f& mat) {
 		if ((blockScriptAnims = (mat.GetX() != ZeroVector))) {
-			pieceSpaceTra.FromMatrix(mat);
+			pieceSpaceTra = Transform::FromMatrix(mat);
 
 			// neither of these are used outside of animation scripts, and
 			// GetEulerAngles wants a matrix created by PYR rotation while
