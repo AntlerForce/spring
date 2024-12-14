@@ -42,7 +42,7 @@ size_t ModelUniformsStorage::GetObjOffset(const CWorldObject* o)
 	return idx;
 }
 
-ModelUniformData& ModelUniformsStorage::GetObjUniformsArray(const CWorldObject* o)
+ModelUniformsStorage::MyType& ModelUniformsStorage::GetObjUniformsArray(const CWorldObject* o)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	size_t offset = GetObjOffset(o);

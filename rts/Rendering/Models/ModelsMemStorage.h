@@ -53,15 +53,8 @@ public:
 private:
 	std::vector<uint8_t> dirtyMap;
 public:
-	const decltype(dirtyMap)& GetDirtyMap() const
-	{
-		return dirtyMap;
-	}
-	decltype(dirtyMap)& GetDirtyMap()
-	{
-		return dirtyMap;
-	}
-
+	const auto& GetDirtyMap() const { return dirtyMap; }
+	auto&       GetDirtyMap()       { return dirtyMap; }
 	void SetAllDirty();
 public:
 	//need to update buffer with matrices BUFFERING times, because the actual buffer is made of BUFFERING number of parts
