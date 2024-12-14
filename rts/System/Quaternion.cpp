@@ -157,7 +157,7 @@ CQuaternion CQuaternion::MakeFrom(const CMatrix44f& mat)
 	const float trace = mat.md[0][0] + mat.md[1][1] + mat.md[2][2];
 
 	if (trace > 0.0f) {
-		const float s = 0.5f * math::isqrt(trace + 1.0f);
+		const float s = 0.5f * InvSqrt(trace + 1.0f);
 
 		return AssertNormalized(CQuaternion(
 			s * (mat.md[1][2] - mat.md[2][1]),
@@ -221,9 +221,7 @@ std::tuple<float3, CQuaternion, float3>  CQuaternion::DecomposeIntoTRS(const CMa
 	const float4& c1 = mat.col[1];
 	const float4& c2 = mat.col[2];
 
-	//triple product == determinant
-	const float d = c0.dot(c1.cross(c2));
-
+	const float d = tmpMat.Det3();
 	const float s = Sign(d);
 
 	float3 scaling {s * c0.Length(), c1.Length(), c2.Length()};
@@ -259,7 +257,7 @@ CQuaternion& CQuaternion::Normalize()
 	if unlikely(sqn < float3::nrm_eps())
 		return *this;
 
-	*this *= math::isqrt(sqn);
+	*this *= InvSqrt(sqn);
 
 	return *this;
 }
@@ -270,7 +268,7 @@ CQuaternion& CQuaternion::Normalize()
 float4 CQuaternion::ToAxisAndAngle() const
 {
 	return float4(
-		float3(x, y, z) * math::isqrt(std::max(0.0f, 1.0f - r * r)),
+		float3(x, y, z) * InvSqrt(std::max(0.0f, 1.0f - r * r)),
 		2.0f * math::acos(std::clamp(r, -1.0f, 1.0f))
 	);
 }
@@ -389,6 +387,15 @@ CQuaternion& CQuaternion::operator*=(float f)
 
 float CQuaternion::SqNorm() const {
 	return (x * x + y * y + z * z + r * r);
+}
+
+float CQuaternion::InvSqrt(float f)
+{
+#if 0
+	return math::isqrt(f);
+#else
+	return 1.0f / math::sqrt(f);
+#endif
 }
 
 CQuaternion CQuaternion::Lerp(const CQuaternion& q1, const CQuaternion& q2, const float a) {

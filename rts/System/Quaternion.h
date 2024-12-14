@@ -101,6 +101,7 @@ public:
 	bool operator!=(const CQuaternion& rhs) const { return !equals(rhs); } //aproximate
 private:
 	float SqNorm() const;
+	static float InvSqrt(float f);
 public:
 	static CQuaternion Lerp (const CQuaternion& q1, const CQuaternion& q2, const float a);
 	static CQuaternion SLerp(const CQuaternion& q1, const CQuaternion& q2, const float a);
