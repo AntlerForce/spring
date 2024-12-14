@@ -48,6 +48,7 @@ public:
 	CMatrix44f& RotateEulerZYX(const float3& angles); // executes Rotate{Z,Y,X}
 	CMatrix44f& Translate(const float x, const float y, const float z);
 	CMatrix44f& Translate(const float3& pos) { return Translate(pos.x, pos.y, pos.z); }
+	CMatrix44f& Scale(float s) { return Scale(s, s, s); }
 	CMatrix44f& Scale(const float3& scales);
 	CMatrix44f& Scale(float scaleX, float scaleY, float scaleZ) { return Scale(float3{ scaleX, scaleY, scaleZ }); }
 

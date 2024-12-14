@@ -9,16 +9,16 @@ class CMatrix44f;
 struct Transform {
 	CR_DECLARE_STRUCT(Transform)
 	CQuaternion r;
-	float4 t;
-	float4 s;
+	float3 t;
+	float s;
 
 	constexpr Transform()
-		: r{ CQuaternion() }
-		, t{ float4() }
-		, s{ float4(1.0f, 1.0f, 1.0f, 0.0f)}
+		: r{ CQuaternion{} }
+		, t{ float3{} }
+		, s{ 1.0f }
 	{}
 
-	constexpr Transform(const CQuaternion& r_, const float4& t_, const float4& s_)
+	constexpr Transform(const CQuaternion& r_, const float3& t_, float s_)
 		: r{ r_ }
 		, t{ t_ }
 		, s{ s_ }
@@ -26,9 +26,9 @@ struct Transform {
 
 	// similar to CMatrix44f::LoadIdentity()
 	void LoadIdentity() {
-		r = CQuaternion();
-		t = float4();
-		s = float4(1.0f, 1.0f, 1.0f, 0.0f);
+		r = CQuaternion{};
+		t = float3{};
+		s = 1.0f;
 	}
 
 	static Transform FromMatrix(const CMatrix44f& mat);

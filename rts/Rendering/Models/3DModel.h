@@ -153,7 +153,7 @@ struct S3DModelPiece {
 
 		offset = ZeroVector;
 		goffset = ZeroVector;
-		scales = OnesVector;
+		scale = 1.0f;
 
 		mins = DEF_MIN_SIZE;
 		maxs = DEF_MAX_SIZE;
@@ -193,7 +193,7 @@ public:
 		assert(m.IsOrthoNormal());
 	}
 
-	Transform ComposeTransform(const float3& t, const float3& r, const float3& s) const;
+	Transform ComposeTransform(const float3& t, const float3& r, float s) const;
 
 	void SetCollisionVolume(const CollisionVolume& cv) { colvol = cv; }
 	const CollisionVolume* GetCollisionVolume() const { return &colvol; }
@@ -222,9 +222,9 @@ public:
 	Transform bposeInvTransform; /// Inverse of bind-pose transform, including baked rots
 	Transform bakedTransform;    /// baked local-space rotations
 
-	float3 offset;               /// local (piece-space) offset wrt. parent piece
-	float3 goffset;              /// global (model-space) offset wrt. root piece
-	float3 scales = OnesVector;  /// baked uniform scaling factors (assimp-only)
+	float3 offset;      /// local (piece-space) offset wrt. parent piece
+	float3 goffset;     /// global (model-space) offset wrt. root piece
+	float scale{1.0f};  /// baked uniform scaling factor (assimp-only)
 
 	float3 mins = DEF_MIN_SIZE;
 	float3 maxs = DEF_MAX_SIZE;
@@ -435,8 +435,8 @@ struct LocalModelPiece
 	void UpdateChildTransformRec(bool updateChildMatrices) const;
 	void UpdateParentMatricesRec() const;
 
-	auto CalcPieceSpaceTransformOrig(const float3& p, const float3& r, const float3& s) const { return original->ComposeTransform(p, r, s); }
-	auto CalcPieceSpaceTransform(const float3& p, const float3& r, const float3& s) const {
+	auto CalcPieceSpaceTransformOrig(const float3& p, const float3& r, float s) const { return original->ComposeTransform(p, r, s); }
+	auto CalcPieceSpaceTransform(const float3& p, const float3& r, float s) const {
 		if (blockScriptAnims)
 			return pieceSpaceTra;
 

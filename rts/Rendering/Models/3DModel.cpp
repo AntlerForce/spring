@@ -249,7 +249,7 @@ void S3DModelPiece::SetPieceTransform(const Transform& parentTra)
 	bposeTransform = parentTra * Transform{
 		CQuaternion(),
 		offset,
-		scales
+		scale
 	};
 
 	bposeInvTransform = bposeTransform.InvertAffine();
@@ -265,7 +265,7 @@ void S3DModelPiece::SetPieceTransform(const Transform& parentTra)
 	}
 }
 
-Transform S3DModelPiece::ComposeTransform(const float3& t, const float3& r, const float3& s) const
+Transform S3DModelPiece::ComposeTransform(const float3& t, const float3& r, float s) const
 {
 	// TODO: Remove ToMatrix() / FromMatrix() non-sense
 
@@ -521,7 +521,7 @@ LocalModelPiece::LocalModelPiece(const S3DModelPiece* piece)
 	pos = piece->offset;
 	dir = piece->GetEmitDir(); // warning investigated, seems fake
 
-	pieceSpaceTra = CalcPieceSpaceTransform(pos, rot, original->scales);
+	pieceSpaceTra = CalcPieceSpaceTransform(pos, rot, original->scale);
 
 	children.reserve(piece->children.size());
 }
@@ -599,7 +599,7 @@ void LocalModelPiece::UpdateChildTransformRec(bool updateChildTransform) const
 		dirty = false;
 		updateChildTransform = true;
 
-		pieceSpaceTra = CalcPieceSpaceTransform(pos, rot, original->scales);
+		pieceSpaceTra = CalcPieceSpaceTransform(pos, rot, original->scale);
 	}
 
 	if (updateChildTransform) {
@@ -632,7 +632,7 @@ void LocalModelPiece::UpdateParentMatricesRec() const
 
 	dirty = false;
 
-	pieceSpaceTra = CalcPieceSpaceTransform(pos, rot, original->scales);
+	pieceSpaceTra = CalcPieceSpaceTransform(pos, rot, original->scale);
 	modelSpaceTra = pieceSpaceTra;
 
 	if (parent != nullptr) {

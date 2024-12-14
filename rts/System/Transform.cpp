@@ -9,13 +9,21 @@ CR_REG_METADATA(Transform, (
 	CR_MEMBER(s)
 ))
 
-static_assert(sizeof(Transform) == 3 * 4 * sizeof(float));
+static_assert(sizeof (Transform) == 2 * 4 * sizeof(float));
 static_assert(alignof(Transform) == alignof(decltype(Transform::r)));
 
 Transform Transform::FromMatrix(const CMatrix44f& mat)
 {
 	Transform tra;
-	std::tie(tra.t, tra.r, tra.s) = CQuaternion::DecomposeIntoTRS(mat);
+	float3 scale;
+	std::tie(tra.t, tra.r, scale) = CQuaternion::DecomposeIntoTRS(mat);
+	assert(
+		epscmp(scale.x, scale.y, std::max(scale.x, scale.y) * float3::cmp_eps()) &&
+		epscmp(scale.y, scale.z, std::max(scale.y, scale.z) * float3::cmp_eps()) &&
+		epscmp(scale.z, scale.x, std::max(scale.z, scale.x) * float3::cmp_eps())
+	);
+	// non-uniform scaling is not supported
+	tra.s = scale.x;
 #ifdef _DEBUG
 	const float3 v{ 100, 200, 300 };
 	auto vMat = mat * v;
@@ -70,7 +78,7 @@ Transform Transform::InvertAffine() const
 {
 	// TODO check correctness
 	const auto invR = r.Inverse();
-	const auto invS = float4{ 1.0f / s.x, 1.0f / s.y, 1.0f / s.z, 0.0f };
+	const auto invS = 1.0f / s;
 	return Transform{
 		invR,
 		invR.Rotate(-t * invS),
@@ -83,7 +91,7 @@ bool Transform::equals(const Transform& tra) const
 	return
 		r.equals(tra.r) &&
 		t.equals(tra.t) &&
-		s.equals(tra.s);
+		epscmp(s, tra.s, float3::cmp_eps());
 }
 
 Transform Transform::operator*(const Transform& childTra) const

@@ -145,9 +145,9 @@ struct SPseudoAssPiece {
 	Transform bposeTransform;    /// bind-pose transform, including baked rots
 	Transform bakedTransform;    /// baked local-space rotations
 
-	float3 offset;               /// local (piece-space) offset wrt. parent piece
-	float3 goffset;              /// global (model-space) offset wrt. root piece
-	float3 scales = OnesVector;  /// baked uniform scaling factors (assimp-only)
+	float3 offset;     /// local (piece-space) offset wrt. parent piece
+	float3 goffset;    /// global (model-space) offset wrt. root piece
+	float scale{1.0f}; /// baked uniform scaling factor (assimp-only)
 
 	bool hasBakedTra;
 
@@ -461,16 +461,19 @@ namespace {
 		CMatrix44f bakedMatrix = aiMatrixToMatrix(aiBakedMatrix);
 
 		// metadata-scaling
-		piece->scales = pieceTable.GetFloat3("scale", aiVectorToFloat3(aiScaleVec));
-		piece->scales.x = pieceTable.GetFloat("scalex", piece->scales.x);
-		piece->scales.y = pieceTable.GetFloat("scaley", piece->scales.y);
-		piece->scales.z = pieceTable.GetFloat("scalez", piece->scales.z);
+		float3 scales{ 1.0f, 1.0f, 1.0f };
+		scales = pieceTable.GetFloat3("scale", aiVectorToFloat3(aiScaleVec));
+		scales.x = pieceTable.GetFloat("scalex", scales.x);
+		scales.y = pieceTable.GetFloat("scaley", scales.y);
+		scales.z = pieceTable.GetFloat("scalez", scales.z);
 
-		if (piece->scales.x != piece->scales.y || piece->scales.y != piece->scales.z) {
-			// LOG_SL(LOG_SECTION_MODEL, L_WARNING, "Spring doesn't support non-uniform scaling");
-			piece->scales.y = piece->scales.x;
-			piece->scales.z = piece->scales.x;
+		if (!epscmp(scales.x, scales.y, std::max(scales.x, scales.y) * float3::cmp_eps()) ||
+			!epscmp(scales.y, scales.z, std::max(scales.y, scales.z) * float3::cmp_eps()) ||
+			!epscmp(scales.z, scales.x, std::max(scales.z, scales.x) * float3::cmp_eps()))
+		{
+			LOG_SL(LOG_SECTION_MODEL, L_WARNING, "Recoil doesn't support non-uniform scaling");
 		}
+		piece->scale = scales.x;
 
 		// metadata-translation
 		piece->offset = pieceTable.GetFloat3("offset", aiVectorToFloat3(aiTransVec));
@@ -500,11 +503,11 @@ namespace {
 			aiScaleVec.x, aiScaleVec.y, aiScaleVec.z
 		);
 		LOG_SL(LOG_SECTION_PIECE, L_INFO,
-			"(%d:%s) Relative offset (%f,%f,%f), rotate (%f,%f,%f), scale (%f,%f,%f)",
+			"(%d:%s) Relative offset (%f,%f,%f), rotate (%f,%f,%f), scale (%f)",
 			model->numPieces, piece->name.c_str(),
 			piece->offset.x, piece->offset.y, piece->offset.z,
 			bakedRotAngles.x, bakedRotAngles.y, bakedRotAngles.z,
-			piece->scales.x, piece->scales.y, piece->scales.z
+			piece->scale
 		);
 
 		// construct 'baked' piece-space transform
@@ -1283,7 +1286,7 @@ void CAssParser::BuildPieceHierarchy(S3DModel* model, ModelPieceMap& pieceMap, c
 void CAssParser::CalculateModelDimensions(S3DModel* model, S3DModelPiece* piece)
 {
 	// TODO fix
-	const CMatrix44f scaleRotMat = piece->ComposeTransform(ZeroVector, ZeroVector, piece->scales).ToMatrix();
+	const CMatrix44f scaleRotMat = piece->ComposeTransform(ZeroVector, ZeroVector, piece->scale).ToMatrix();
 
 	// cannot set this until parent relations are known, so either here or in BuildPieceHierarchy()
 	piece->goffset = scaleRotMat.Mul(piece->offset) + ((piece->parent != nullptr)? piece->parent->goffset: ZeroVector);
@@ -1405,6 +1408,6 @@ void SPseudoAssPiece::SetPieceTransform(const Transform& tra)
 	bposeTransform = tra * Transform{
 		CQuaternion(),
 		offset,
-		scales
+		scale
 	};
 }
