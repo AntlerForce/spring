@@ -14,39 +14,41 @@
 #include "Sim/Objects/SolidObjectDef.h"
 
 class TransformsMemStorage : public StablePosAllocator<CMatrix44f> {
+private:
+	using MyType = StablePosAllocator::Type;
 public:
 	explicit TransformsMemStorage()
-		: StablePosAllocator<CMatrix44f>(INIT_NUM_ELEMS)
+		: StablePosAllocator<MyType>(INIT_NUM_ELEMS)
 		, dirtyMap(INIT_NUM_ELEMS, BUFFERING)
 	{}
 	void Reset() override {
 		assert(Threading::IsMainThread());
-		StablePosAllocator<CMatrix44f>::Reset();
+		StablePosAllocator<MyType>::Reset();
 		dirtyMap.resize(GetSize(), BUFFERING);
 	}
 
 	size_t Allocate(size_t numElems) override {
 		auto lock = CModelsLock::GetScopedLock();
-		size_t res = StablePosAllocator<CMatrix44f>::Allocate(numElems);
+		size_t res = StablePosAllocator<MyType>::Allocate(numElems);
 		dirtyMap.resize(GetSize(), BUFFERING);
 
 		return res;
 	}
-	void Free(size_t firstElem, size_t numElems, const CMatrix44f* T0 = nullptr) override {
+	void Free(size_t firstElem, size_t numElems, const MyType* T0 = nullptr) override {
 		auto lock = CModelsLock::GetScopedLock();
-		StablePosAllocator<CMatrix44f>::Free(firstElem, numElems, T0);
+		StablePosAllocator<MyType>::Free(firstElem, numElems, T0);
 		dirtyMap.resize(GetSize(), BUFFERING);
 	}
 
-	const CMatrix44f& operator[](std::size_t idx) const override
+	const MyType& operator[](std::size_t idx) const override
 	{
 		auto lock = CModelsLock::GetScopedLock();
-		return StablePosAllocator<CMatrix44f>::operator[](idx);
+		return StablePosAllocator<MyType>::operator[](idx);
 	}
-	CMatrix44f& operator[](std::size_t idx) override
+	MyType& operator[](std::size_t idx) override
 	{
 		auto lock = CModelsLock::GetScopedLock();
-		return StablePosAllocator<CMatrix44f>::operator[](idx);
+		return StablePosAllocator<MyType>::operator[](idx);
 	}
 private:
 	std::vector<uint8_t> dirtyMap;
@@ -137,33 +139,35 @@ private:
 
 class CWorldObject;
 class ModelUniformsStorage {
+private:
+	using MyType = ModelUniformData;
 public:
 	ModelUniformsStorage();
 public:
 	size_t AddObjects(const CWorldObject* o);
 	void   DelObjects(const CWorldObject* o);
 	size_t GetObjOffset(const CWorldObject* o);
-	ModelUniformData& GetObjUniformsArray(const CWorldObject* o);
+	MyType& GetObjUniformsArray(const CWorldObject* o);
 
 	size_t AddObjects(const SolidObjectDef* o) { return INVALID_INDEX; }
 	void   DelObjects(const SolidObjectDef* o) {}
 	size_t GetObjOffset(const SolidObjectDef* o) { return INVALID_INDEX; }
-	ModelUniformData& GetObjUniformsArray(const SolidObjectDef* o) { return dummy; }
+	auto& GetObjUniformsArray(const SolidObjectDef* o) { return dummy; }
 
 	size_t AddObjects(const S3DModel* o) { return INVALID_INDEX; }
 	void   DelObjects(const S3DModel* o) {}
 	size_t GetObjOffset(const S3DModel* o) { return INVALID_INDEX; }
-	ModelUniformData& GetObjUniformsArray(const S3DModel* o) { return dummy; }
+	auto& GetObjUniformsArray(const S3DModel* o) { return dummy; }
 
 	size_t Size() const { return storage.GetData().size(); }
-	const std::vector<ModelUniformData>& GetData() const { return storage.GetData(); }
+	const auto& GetData() const { return storage.GetData(); }
 public:
 	static constexpr size_t INVALID_INDEX = 0;
 private:
-	inline static ModelUniformData dummy = {};
+	inline static MyType dummy = {};
 
 	std::unordered_map<CWorldObject*, size_t> objectsMap;
-	spring::FreeListMap<ModelUniformData> storage;
+	spring::FreeListMap<MyType> storage;
 };
 
 extern ModelUniformsStorage modelUniformsStorage;
