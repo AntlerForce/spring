@@ -3,7 +3,7 @@
 #include <tuple>
 #include <optional>
 #include <vector>
-#include "System/creg/creg.h"
+#include "System/creg/creg_cond.h"
 
 class UpdateList {
 	CR_DECLARE_STRUCT(UpdateList)
