@@ -69,11 +69,11 @@ public:
 
 	void ClearPreviousDrawFlags() { for (auto object : unsortedObjects) object->previousDrawFlag = 0; }
 
-	const ScopedTransformMemAlloc& GetObjectTransformMemAlloc(const T* o) const {
+	const auto& GetObjectTransformMemAlloc(const T* o) const {
 		const auto it = scTransMemAllocMap.find(const_cast<T*>(o));
 		return (it != scTransMemAllocMap.end()) ? it->second : ScopedTransformMemAlloc::Dummy();
 	}
-	ScopedTransformMemAlloc& GetObjectTransformMemAlloc(const T* o) { return scTransMemAllocMap[const_cast<T*>(o)]; }
+	auto& GetObjectTransformMemAlloc(const T* o) { return scTransMemAllocMap[const_cast<T*>(o)]; }
 private:
 	static constexpr int MMA_SIZE0 = 2 << 16;
 protected:
@@ -160,7 +160,6 @@ inline void CModelDrawerDataBase<T>::UpdateObjectSMMA(const T* o)
 	ScopedTransformMemAlloc& smma = GetObjectTransformMemAlloc(o);
 
 	const auto  tmNew = o->GetTransformMatrix();
-	const auto& tmOld = const_cast<const ScopedTransformMemAlloc&>(smma)[0];
 
 	// from one point it doesn't worth the comparison, cause units usually move
 	// but having not updated smma[0] allows for longer solid no-update areas in ModelUniformsUploader::UpdateDerived()

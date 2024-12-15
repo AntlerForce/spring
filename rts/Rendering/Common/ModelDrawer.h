@@ -110,7 +110,7 @@ public:
 	static bool CanDrawDeferred() { return modelDrawerState->CanDrawDeferred(); }
 	static bool SetTeamColor(int team, const float alpha = 1.0f) { return modelDrawerState->SetTeamColor(team, alpha); }
 	static void SetNanoColor(const float4& color) { modelDrawerState->SetNanoColor(color); }
-	static const ScopedTransformMemAlloc& GetMatricesMemAlloc(const ObjType* o) { return const_cast<const TDrawerData*>(modelDrawerData)->GetObjectTransformMemAlloc(o); }
+	static const ScopedTransformMemAlloc& GetTransformMemAlloc(const ObjType* o) { return const_cast<const TDrawerData*>(modelDrawerData)->GetObjectTransformMemAlloc(o); }
 public:
 	virtual void Update() const = 0;
 	// Draw*

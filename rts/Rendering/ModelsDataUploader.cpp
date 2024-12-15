@@ -220,7 +220,7 @@ std::size_t TransformsUploader::GetElemOffsetImpl(const CUnit* unit) const
 		return TransformsMemStorage::INVALID_INDEX;
 	}
 
-	if (std::size_t offset = CUnitDrawer::GetMatricesMemAlloc(unit).GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
+	if (std::size_t offset = CUnitDrawer::GetTransformMemAlloc(unit).GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
 		return offset;
 	}
 
@@ -235,7 +235,7 @@ std::size_t TransformsUploader::GetElemOffsetImpl(const CFeature* feature) const
 		return TransformsMemStorage::INVALID_INDEX;
 	}
 
-	if (std::size_t offset = CFeatureDrawer::GetMatricesMemAlloc(feature).GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
+	if (std::size_t offset = CFeatureDrawer::GetTransformMemAlloc(feature).GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
 		return offset;
 	}
 
