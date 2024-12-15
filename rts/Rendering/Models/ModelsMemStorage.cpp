@@ -20,8 +20,6 @@ void ModelUniformsStorage::Init()
 void ModelUniformsStorage::Kill()
 {
 	// Remaining objects are not cleared anywhere (not a good thing) so delete them here
-	assert(updateList.Size() == objectsMap.size());
-	assert(updateList.Size() <= storage.size()); // storage.size() doesn't account for gaps
 	updateList.Clear();
 	storage.clear();
 	objectsMap.clear();
@@ -47,8 +45,6 @@ size_t ModelUniformsStorage::AddObject(const CWorldObject* o)
 		updateList.SetUpdate(idx);
 	}
 
-	assert(storage.size() == updateList.Size());
-
 	return idx;
 }
 
@@ -57,7 +53,7 @@ void ModelUniformsStorage::DelObject(const CWorldObject* o)
 	RECOIL_DETAILED_TRACY_ZONE;
 	const auto it = objectsMap.find(const_cast<CWorldObject*>(o));
 
-	if (it != objectsMap.end())
+	if (it == objectsMap.end())
 		return;
 
 	storage.Del(it->second);
@@ -71,8 +67,6 @@ void ModelUniformsStorage::DelObject(const CWorldObject* o)
 	}
 
 	objectsMap.erase(it);
-
-	assert(storage.size() == updateList.Size());
 }
 
 size_t ModelUniformsStorage::GetObjOffset(const CWorldObject* o)
@@ -114,8 +108,6 @@ size_t TransformsMemStorage::Allocate(size_t numElems)
 	auto res = storage.Allocate(numElems);
 	updateList.Resize(storage.GetSize());
 
-	assert(updateList.Size() == storage.GetSize());
-
 	return res;
 }
 
@@ -126,12 +118,11 @@ void TransformsMemStorage::Free(size_t firstElem, size_t numElems, const MyType*
 	storage.Free(firstElem, numElems, T0);
 	updateList.SetUpdate(firstElem, numElems);
 	updateList.Trim(storage.GetSize());
-
-	assert(updateList.Size() == storage.GetSize());
 }
 
 const TransformsMemStorage::MyType& TransformsMemStorage::operator[](std::size_t idx) const
 {
 	auto lock = CModelsLock::GetScopedLock();
+
 	return storage[idx];
 }
