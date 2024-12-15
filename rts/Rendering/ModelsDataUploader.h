@@ -33,6 +33,10 @@ public:
 	void Init() { static_cast<Derived*>(this)->InitDerived(); }
 	void Kill() { static_cast<Derived*>(this)->KillDerived(); }
 	void Update() { static_cast<Derived*>(this)->UpdateDerived(); }
+
+	uint32_t GetElemsCount() const;
+	auto GetElemCountIncr() const { return elemCountIncr; }
+	auto GetBindingIdx() const { return bindingIdx; }
 public:
 	// Defs
 	std::size_t GetElemOffset(const UnitDef* def) const { return GetDefElemOffsetImpl(def); }
@@ -59,7 +63,6 @@ protected:
 	virtual std::size_t GetElemOffsetImpl(const CFeature* so) const = 0;
 	virtual std::size_t GetElemOffsetImpl(const CProjectile* p) const = 0;
 
-	uint32_t GetElemsCount() const;
 protected:
 	uint32_t bindingIdx = -1u;
 	uint32_t elemCount0 = 0;
@@ -83,8 +86,8 @@ protected:
 	std::size_t GetElemOffsetImpl(const CProjectile* p) const override;
 private:
 	static constexpr uint32_t MATRIX_SSBO_BINDING_IDX = 0;
-	static constexpr uint32_t ELEM_COUNT0 = 1u << 13;
-	static constexpr uint32_t ELEM_COUNTI = 1u << 12;
+	static constexpr uint32_t ELEM_COUNT0 = 1u << 16;
+	static constexpr uint32_t ELEM_COUNTI = 1u << 14;
 };
 
 class ModelUniformsUploader : public TypedStorageBufferUploader<ModelUniformData, ModelUniformsUploader> {

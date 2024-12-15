@@ -24,6 +24,24 @@ void UpdateList::ResetNeedUpdateAll()
 	changed = false;
 }
 
+void UpdateList::Trim(size_t newLessThanOrEqualSize)
+{
+	RECOIL_DETAILED_TRACY_ZONE;
+	assert(newLessThanOrEqualSize <= updateList.size());
+	updateList.resize(newLessThanOrEqualSize);
+	// no need to modify the update status
+}
+
+void UpdateList::SetUpdate(size_t first, size_t count)
+{
+	RECOIL_DETAILED_TRACY_ZONE;
+
+	auto beg = updateList.begin() + first;
+	auto end = beg + count;
+
+	SetUpdate(UpdateList::IteratorPair(beg, end));
+}
+
 void UpdateList::SetUpdate(const UpdateList::IteratorPair& it)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
@@ -60,7 +78,7 @@ void UpdateList::PopBack(size_t N)
 	changed = true;
 }
 
-std::optional<UpdateList::IteratorPair> UpdateList::GetNext(const std::optional<UpdateList::IteratorPair>& prev)
+std::optional<UpdateList::ConstIteratorPair> UpdateList::GetNext(const std::optional<UpdateList::ConstIteratorPair>& prev) const
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	auto beg = prev.has_value() ? prev.value().second : updateList.begin();
@@ -73,7 +91,7 @@ std::optional<UpdateList::IteratorPair> UpdateList::GetNext(const std::optional<
 	return std::make_optional(std::make_pair(beg, end));
 }
 
-std::pair<size_t, size_t> UpdateList::GetOffsetAndSize(const UpdateList::IteratorPair& it)
+std::pair<size_t, size_t> UpdateList::GetOffsetAndSize(const UpdateList::ConstIteratorPair& it) const
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	return std::make_pair(

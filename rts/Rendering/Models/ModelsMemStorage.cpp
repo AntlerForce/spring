@@ -9,8 +9,13 @@ ModelUniformsStorage modelUniformsStorage;
 ModelUniformsStorage::ModelUniformsStorage()
 {
 	RECOIL_DETAILED_TRACY_ZONE;
-	storage[0] = dummy;
-	objectsMap.emplace(nullptr, 0);
+	storage[AddObjects(static_cast<const CWorldObject*>(nullptr))] = dummy;
+}
+
+ModelUniformsStorage::~ModelUniformsStorage()
+{
+	// just in case
+	DelObjects(static_cast<const CWorldObject*>(nullptr));
 }
 
 size_t ModelUniformsStorage::AddObjects(const CWorldObject* o)
@@ -18,6 +23,17 @@ size_t ModelUniformsStorage::AddObjects(const CWorldObject* o)
 	RECOIL_DETAILED_TRACY_ZONE;
 	const size_t idx = storage.Add(ModelUniformData());
 	objectsMap[const_cast<CWorldObject*>(o)] = idx;
+
+	if (idx + 1 == storage.size()) {
+		//new item got added to the end of storage
+		updateList.EmplaceBackUpdate();
+	} else {
+		// storage got updated somewhere in the middle, use updateList.SetUpdate()
+		updateList.SetUpdate(idx);
+	}
+
+	assert(storage.size() == updateList.Size());
+
 	return idx;
 }
 
@@ -28,7 +44,18 @@ void ModelUniformsStorage::DelObjects(const CWorldObject* o)
 	assert(it != objectsMap.end());
 
 	storage.Del(it->second);
+
+	if (storage.size() < updateList.Size()) {
+		// storage got one element shorter, trim updateList as well
+		updateList.Trim(it->second);
+	} else {
+		// storage got updated somewhere in the middle, use updateList.SetUpdate()
+		updateList.SetUpdate(it->second);
+	}
+
 	objectsMap.erase(it);
+
+	assert(storage.size() == updateList.Size());
 }
 
 size_t ModelUniformsStorage::GetObjOffset(const CWorldObject* o)
@@ -49,9 +76,43 @@ ModelUniformsStorage::MyType& ModelUniformsStorage::GetObjUniformsArray(const CW
 	return storage[offset];
 }
 
-void TransformsMemStorage::SetAllDirty()
+TransformsMemStorage::TransformsMemStorage()
+	: storage(StablePosAllocator<MyType>(INIT_NUM_ELEMS))
+	, updateList(INIT_NUM_ELEMS)
+{}
+
+void TransformsMemStorage::Reset()
 {
-	RECOIL_DETAILED_TRACY_ZONE;
 	assert(Threading::IsMainThread());
-	std::fill(dirtyMap.begin(), dirtyMap.end(), BUFFERING);
+	storage.Reset();
+	updateList.Trim(storage.GetSize());
+}
+
+size_t TransformsMemStorage::Allocate(size_t numElems)
+{
+	auto lock = CModelsLock::GetScopedLock();
+
+	auto res = storage.Allocate(numElems);
+	updateList.Resize(storage.GetSize());
+
+	assert(updateList.Size() == storage.GetSize());
+
+	return res;
+}
+
+void TransformsMemStorage::Free(size_t firstElem, size_t numElems, const MyType* T0)
+{
+	auto lock = CModelsLock::GetScopedLock();
+
+	storage.Free(firstElem, numElems, T0);
+	updateList.SetUpdate(firstElem, numElems);
+	updateList.Trim(storage.GetSize());
+
+	assert(updateList.Size() == storage.GetSize());
+}
+
+const TransformsMemStorage::MyType& TransformsMemStorage::operator[](std::size_t idx) const
+{
+	auto lock = CModelsLock::GetScopedLock();
+	return storage[idx];
 }

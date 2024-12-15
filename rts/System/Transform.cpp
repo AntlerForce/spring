@@ -1,5 +1,7 @@
 #include "Transform.hpp"
 
+#include <cmath>
+
 #include "System/SpringMath.h"
 
 CR_BIND(Transform, )
@@ -11,6 +13,11 @@ CR_REG_METADATA(Transform, (
 
 static_assert(sizeof (Transform) == 2 * 4 * sizeof(float));
 static_assert(alignof(Transform) == alignof(decltype(Transform::r)));
+
+void Transform::SetScaleSign(float signSrc)
+{
+	s = std::copysignf(s, signSrc);
+}
 
 bool Transform::IsIdentity() const
 {

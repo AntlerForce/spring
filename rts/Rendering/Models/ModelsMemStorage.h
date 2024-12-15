@@ -12,55 +12,64 @@
 #include "System/Threading/SpringThreading.h"
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Objects/SolidObjectDef.h"
+#include "Rendering/Common/UpdateList.h"
 
-class TransformsMemStorage : public StablePosAllocator<CMatrix44f> {
+class TransformsMemStorage {
+public:
+	using MyType = CMatrix44f;
+	using EqualCmpFunctor = bool(*)(const MyType&, const MyType&);
+public:
+	explicit TransformsMemStorage();
+	void Reset();
+
+	size_t Allocate(size_t numElems);
+
+	void Free(size_t firstElem, size_t numElems, const MyType* T0 = nullptr);
+
+	const auto& GetData() const { return storage.GetData(); }
+	const auto  GetSize() const { return storage.GetSize(); }
+
+	template<typename MyTypeLike = MyType> // to force universal references
+	bool UpdateIfChanged(std::size_t idx, MyTypeLike&& newValue, EqualCmpFunctor eqCmp) {
+		auto lock = CModelsLock::GetScopedLock();
+
+		using DT = StablePosAllocator<MyType>;
+		const auto& curValue = static_cast<const DT&>(storage)[idx];
+		if (eqCmp(curValue, newValue))
+			return false;
+
+		updateList.SetUpdate(idx);
+		auto& mutValue = static_cast<DT&>(storage)[idx];
+		mutValue = newValue;
+
+		assert(updateList.Size() == storage.GetSize());
+
+		return true;
+	}
+
+	template<typename MyTypeLike = MyType> // to force universal references
+	void UpdateForced(std::size_t idx, MyTypeLike&& newValue) {
+		auto lock = CModelsLock::GetScopedLock();
+
+		updateList.SetUpdate(idx);
+		auto& mutValue = storage[idx];
+		mutValue = newValue;
+
+		assert(updateList.Size() == storage.GetSize());
+	}
+
+	const MyType& operator[](std::size_t idx) const;
+
+	const auto& GetUpdateList() const { return updateList; }
+	void SetUpdateListUpdateAll() { updateList.SetNeedUpdateAll(); }
+	void SetUpdateListReset() { updateList.ResetNeedUpdateAll(); }
 private:
-	using MyType = StablePosAllocator::Type;
-public:
-	explicit TransformsMemStorage()
-		: StablePosAllocator<MyType>(INIT_NUM_ELEMS)
-		, dirtyMap(INIT_NUM_ELEMS, BUFFERING)
-	{}
-	void Reset() override {
-		assert(Threading::IsMainThread());
-		StablePosAllocator<MyType>::Reset();
-		dirtyMap.resize(GetSize(), BUFFERING);
-	}
-
-	size_t Allocate(size_t numElems) override {
-		auto lock = CModelsLock::GetScopedLock();
-		size_t res = StablePosAllocator<MyType>::Allocate(numElems);
-		dirtyMap.resize(GetSize(), BUFFERING);
-
-		return res;
-	}
-	void Free(size_t firstElem, size_t numElems, const MyType* T0 = nullptr) override {
-		auto lock = CModelsLock::GetScopedLock();
-		StablePosAllocator<MyType>::Free(firstElem, numElems, T0);
-		dirtyMap.resize(GetSize(), BUFFERING);
-	}
-
-	const MyType& operator[](std::size_t idx) const override
-	{
-		auto lock = CModelsLock::GetScopedLock();
-		return StablePosAllocator<MyType>::operator[](idx);
-	}
-	MyType& operator[](std::size_t idx) override
-	{
-		auto lock = CModelsLock::GetScopedLock();
-		return StablePosAllocator<MyType>::operator[](idx);
-	}
-private:
-	std::vector<uint8_t> dirtyMap;
-public:
-	const auto& GetDirtyMap() const { return dirtyMap; }
-	auto&       GetDirtyMap()       { return dirtyMap; }
-	void SetAllDirty();
-public:
-	//need to update buffer with matrices BUFFERING times, because the actual buffer is made of BUFFERING number of parts
-	static constexpr uint8_t BUFFERING = 3u;
+	StablePosAllocator<MyType> storage;
+	UpdateList updateList;
 private:
 	static constexpr int INIT_NUM_ELEMS = 1 << 16u;
+public:
+	static constexpr auto INVALID_INDEX = StablePosAllocator<MyType>::INVALID_INDEX;
 };
 
 extern TransformsMemStorage transformsMemStorage;
@@ -104,18 +113,31 @@ public:
 		return *this;
 	}
 
-	const CMatrix44f& operator[](std::size_t offset) const {
+	const auto& operator[](std::size_t offset) const {
 		assert(firstElem != TransformsMemStorage::INVALID_INDEX);
 		assert(offset >= 0 && offset < numElems);
 
 		return transformsMemStorage[firstElem + offset];
 	}
-	CMatrix44f& operator[](std::size_t offset) {
+
+	template<typename MyTypeLike = TransformsMemStorage::MyType> // to force universal references
+	bool UpdateIfChanged(std::size_t offset, MyTypeLike&& newValue) {
+		static const auto EqCmp = [](const TransformsMemStorage::MyType& lhs, const TransformsMemStorage::MyType& rhs) {
+			return lhs.equals(rhs);
+		};
+
 		assert(firstElem != TransformsMemStorage::INVALID_INDEX);
 		assert(offset >= 0 && offset < numElems);
 
-		transformsMemStorage.GetDirtyMap().at(firstElem + offset) = TransformsMemStorage::BUFFERING;
-		return transformsMemStorage[firstElem + offset];
+		return transformsMemStorage.UpdateIfChanged(firstElem + offset, newValue, EqCmp);
+	}
+
+	template<typename MyTypeLike = TransformsMemStorage::MyType> // to force universal references
+	void UpdateForced(std::size_t offset, MyTypeLike&& newValue) {
+		assert(firstElem != TransformsMemStorage::INVALID_INDEX);
+		assert(offset >= 0 && offset < numElems);
+
+		transformsMemStorage.UpdateForced(firstElem + offset, std::forward<MyTypeLike>(newValue));
 	}
 public:
 	static const ScopedTransformMemAlloc& Dummy() {
@@ -136,6 +158,7 @@ private:
 	using MyType = ModelUniformData;
 public:
 	ModelUniformsStorage();
+	~ModelUniformsStorage();
 public:
 	size_t AddObjects(const CWorldObject* o);
 	void   DelObjects(const CWorldObject* o);
@@ -152,8 +175,14 @@ public:
 	size_t GetObjOffset(const S3DModel* o) { return INVALID_INDEX; }
 	auto& GetObjUniformsArray(const S3DModel* o) { return dummy; }
 
-	size_t Size() const { return storage.GetData().size(); }
+	auto GetSize() const { return storage.GetData().size(); }
 	const auto& GetData() const { return storage.GetData(); }
+
+	const auto& GetUpdateList() const { return updateList; }
+	void SetUpdateListUpdateAll() { updateList.SetNeedUpdateAll(); }
+	void SetUpdateListReset() { updateList.ResetNeedUpdateAll(); }
+private:
+	UpdateList updateList;
 public:
 	static constexpr size_t INVALID_INDEX = 0;
 private:

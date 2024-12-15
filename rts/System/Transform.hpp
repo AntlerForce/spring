@@ -31,6 +31,9 @@ struct Transform {
 		s = 1.0f;
 	}
 
+	// can be used to enable/disable rendering
+	void SetScaleSign(float signSrc);
+
 	bool IsIdentity() const;
 
 	static Transform FromMatrix(const CMatrix44f& mat);

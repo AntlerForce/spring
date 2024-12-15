@@ -32,6 +32,56 @@
 
 ////////////////////////////////////////////////////////////////////
 
+namespace Impl {
+	template<
+		typename SSBO,
+		typename Uploader,
+		typename MemStorage
+	>
+	void UpdateCommon(Uploader& uploader, std::unique_ptr<SSBO>& ssbo, MemStorage& memStorage, const char* className, const char* funcName)
+	{
+		//resize
+		const uint32_t elemCount = uploader.GetElemsCount();
+		const uint32_t storageElemCount = memStorage.GetSize();
+		if (storageElemCount > elemCount) {
+			ssbo->UnbindBufferRange(uploader.GetBindingIdx());
+
+			const uint32_t newElemCount = AlignUp(storageElemCount, uploader.GetElemCountIncr());
+			LOG_L(L_DEBUG, "[%s::%s] sizing SSBO %s. New elements count = %u, elemCount = %u, storageElemCount = %u", className, funcName, "up", newElemCount, elemCount, storageElemCount);
+			ssbo->Resize(newElemCount);
+			// ssbo->Resize() doesn't copy the data, force the update
+			memStorage.SetUpdateListUpdateAll();
+		}
+
+		const auto& ul = memStorage.GetUpdateList();
+		if (!ul.NeedUpdate())
+			return;
+
+		// may have been already unbound above, not a big deal
+		ssbo->UnbindBufferRange(uploader.GetBindingIdx());
+
+		// get the data
+		const auto* clientPtr = memStorage.GetData().data();
+
+		// iterate over contiguous regions of values that need update on the GPU
+		for (auto itPair = ul.GetNext(); itPair.has_value(); itPair = ul.GetNext(itPair)) {
+			auto [idxOffset, idxSize] = ul.GetOffsetAndSize(itPair.value());
+
+			auto* mappedPtr = ssbo->Map(clientPtr, idxOffset, idxSize);
+
+			if (!ssbo->HasClientPtr())
+				memcpy(mappedPtr, clientPtr, storageElemCount * sizeof(decltype(*clientPtr)));
+
+			ssbo->Unmap();
+		}
+
+		ssbo->BindBufferRange(uploader.GetBindingIdx());
+		ssbo->SwapBuffer();
+
+		memStorage.SetUpdateListReset();
+	}
+}
+
 template<typename T, typename Derived>
 void TypedStorageBufferUploader<T, Derived>::InitImpl(uint32_t bindingIdx_, uint32_t elemCount0_, uint32_t elemCountIncr_, uint8_t type, bool coherent, uint32_t numBuffers)
 {
@@ -109,18 +159,7 @@ void TransformsUploader::InitDerived()
 	if (!globalRendering->haveGL4)
 		return;
 
-	const auto sbType = globalRendering->supportPersistentMapping
-		? IStreamBufferConcept::Types::SB_PERSISTENTMAP
-		: IStreamBufferConcept::Types::SB_BUFFERSUBDATA;
-
-	InitImpl(MATRIX_SSBO_BINDING_IDX, ELEM_COUNT0, ELEM_COUNTI, sbType, true, TransformsMemStorage::BUFFERING);
-	if (ssbo->GetBufferImplementation() == IStreamBufferConcept::Types::SB_PERSISTENTMAP && !ssbo->IsValid()) {
-		// some potatoe driver overestimated its support for SB_PERSISTENTMAP
-		// Redo with good old SB_BUFFERSUBDATA
-		LOG_L(L_ERROR, "[%s::%s] OpenGL reported persistent mapping to be available, but initial mapping of buffer failed. Falling back.", className, __func__);
-		KillImpl();
-		InitImpl(MATRIX_SSBO_BINDING_IDX, ELEM_COUNT0, ELEM_COUNTI, IStreamBufferConcept::Types::SB_BUFFERSUBDATA, true, TransformsMemStorage::BUFFERING);
-	}
+	InitImpl(MATRIX_SSBO_BINDING_IDX, ELEM_COUNT0, ELEM_COUNTI, IStreamBufferConcept::Types::SB_BUFFERSUBDATA, true, 1);
 }
 
 void TransformsUploader::KillDerived()
@@ -137,68 +176,11 @@ void TransformsUploader::UpdateDerived()
 		return;
 
 	SCOPED_TIMER("TransformsUploader::Update");
-	ssbo->UnbindBufferRange(bindingIdx);
 
+	// TODO why the lock?
 	auto lock = CModelsLock::GetScopedLock();
 
-	//resize
-	const uint32_t elemCount = GetElemsCount();
-	const uint32_t storageElemCount = transformsMemStorage.GetSize();
-	if (storageElemCount > elemCount) {
-		const uint32_t newElemCount = AlignUp(storageElemCount, elemCountIncr);
-		LOG_L(L_DEBUG, "[%s::%s] sizing SSBO %s. New elements count = %u, elemCount = %u, storageElemCount = %u", className, __func__, "up", newElemCount, elemCount, storageElemCount);
-		ssbo->Resize(newElemCount);
-
-		if (ssbo->GetBufferImplementation() == IStreamBufferConcept::Types::SB_PERSISTENTMAP && !ssbo->IsValid()) {
-			LOG_L(L_ERROR, "[%s::%s] OpenGL reported persistent mapping to be available, but mapping of buffer of %u size failed. Falling back.", className, __func__, uint32_t(newElemCount * sizeof(CMatrix44f)));
-			KillImpl();
-			InitImpl(MATRIX_SSBO_BINDING_IDX, newElemCount, ELEM_COUNTI, IStreamBufferConcept::Types::SB_BUFFERSUBDATA, true, TransformsMemStorage::BUFFERING);
-		}
-
-		transformsMemStorage.SetAllDirty(); //Resize doesn't copy the data
-	}
-
-	//update on the GPU
-	const CMatrix44f* clientPtr = transformsMemStorage.GetData().data();
-
-	constexpr bool ENABLE_UPLOAD_OPTIMIZATION = true;
-	if (ssbo->GetBufferImplementation() == IStreamBufferConcept::Types::SB_PERSISTENTMAP && ENABLE_UPLOAD_OPTIMIZATION) {
-		const auto stt = transformsMemStorage.GetDirtyMap().begin();
-		const auto fin = transformsMemStorage.GetDirtyMap().end();
-
-		auto beg = transformsMemStorage.GetDirtyMap().begin();
-		auto end = transformsMemStorage.GetDirtyMap().begin();
-
-		static const auto dirtyPred = [](uint8_t m) -> bool { return m > 0u; };
-		while (beg != fin) {
-			beg = std::find_if    (beg, fin, dirtyPred);
-			end = std::find_if_not(beg, fin, dirtyPred);
-
-			if (beg != fin) {
-				const uint32_t offs = static_cast<uint32_t>(std::distance(stt, beg));
-				const uint32_t size = static_cast<uint32_t>(std::distance(beg, end));
-
-				CMatrix44f* mappedPtr = ssbo->Map(clientPtr, offs, size);
-				memcpy(mappedPtr, clientPtr + offs, size * sizeof(CMatrix44f));
-				ssbo->Unmap();
-
-				std::transform(beg, end, beg, [](uint8_t v) { return (v - 1); }); //make it less dirty
-			}
-
-			beg = end; //rewind
-		}
-	}
-	else {
-		const CMatrix44f* clientPtr = transformsMemStorage.GetData().data();
-		CMatrix44f* mappedPtr = ssbo->Map(clientPtr, 0, storageElemCount);
-
-		if (!ssbo->HasClientPtr())
-			memcpy(mappedPtr, clientPtr, storageElemCount * sizeof(CMatrix44f));
-
-		ssbo->Unmap();
-	}
-	ssbo->BindBufferRange(bindingIdx);
-	ssbo->SwapBuffer();
+	Impl::UpdateCommon(*this, ssbo, transformsMemStorage, className, __func__);
 }
 
 std::size_t TransformsUploader::GetDefElemOffsetImpl(const S3DModel* model) const
@@ -292,7 +274,7 @@ void ModelUniformsUploader::InitDerived()
 	if (!globalRendering->haveGL4)
 		return;
 
-	InitImpl(MATUNI_SSBO_BINDING_IDX, ELEM_COUNT0, ELEM_COUNTI, IStreamBufferConcept::Types::SB_BUFFERSUBDATA, true, 3);
+	InitImpl(MATUNI_SSBO_BINDING_IDX, ELEM_COUNT0, ELEM_COUNTI, IStreamBufferConcept::Types::SB_BUFFERSUBDATA, true, 1);
 }
 
 void ModelUniformsUploader::KillDerived()
@@ -309,27 +291,8 @@ void ModelUniformsUploader::UpdateDerived()
 		return;
 
 	SCOPED_TIMER("ModelUniformsUploader::Update");
-	ssbo->UnbindBufferRange(bindingIdx);
 
-	//resize
-	const uint32_t elemCount = GetElemsCount();
-	const uint32_t storageElemCount = modelUniformsStorage.Size();
-	if (storageElemCount > elemCount) {
-		const uint32_t newElemCount = AlignUp(storageElemCount, elemCountIncr);
-		LOG_L(L_DEBUG, "[%s::%s] sizing SSBO %s. New elements count = %u, elemCount = %u, storageElemCount = %u", className, __func__, "up", newElemCount, elemCount, storageElemCount);
-		ssbo->Resize(newElemCount);
-	}
-
-	//update on the GPU
-	const ModelUniformData* clientPtr = modelUniformsStorage.GetData().data();
-	ModelUniformData* mappedPtr = ssbo->Map(clientPtr, 0, storageElemCount);
-
-	if (!ssbo->HasClientPtr())
-		memcpy(mappedPtr, clientPtr, storageElemCount * sizeof(ModelUniformData));
-
-	ssbo->Unmap();
-	ssbo->BindBufferRange(bindingIdx);
-	ssbo->SwapBuffer();
+	Impl::UpdateCommon(*this, ssbo, modelUniformsStorage, className, __func__);
 }
 
 std::size_t ModelUniformsUploader::GetDefElemOffsetImpl(const S3DModel* model) const

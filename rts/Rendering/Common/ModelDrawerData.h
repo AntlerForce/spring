@@ -70,17 +70,17 @@ public:
 	void ClearPreviousDrawFlags() { for (auto object : unsortedObjects) object->previousDrawFlag = 0; }
 
 	const ScopedTransformMemAlloc& GetObjectTransformMemAlloc(const T* o) const {
-		const auto it = matricesMemAllocs.find(const_cast<T*>(o));
-		return (it != matricesMemAllocs.end()) ? it->second : ScopedTransformMemAlloc::Dummy();
+		const auto it = scTransMemAllocMap.find(const_cast<T*>(o));
+		return (it != scTransMemAllocMap.end()) ? it->second : ScopedTransformMemAlloc::Dummy();
 	}
-	ScopedTransformMemAlloc& GetObjectTransformMemAlloc(const T* o) { return matricesMemAllocs[const_cast<T*>(o)]; }
+	ScopedTransformMemAlloc& GetObjectTransformMemAlloc(const T* o) { return scTransMemAllocMap[const_cast<T*>(o)]; }
 private:
 	static constexpr int MMA_SIZE0 = 2 << 16;
 protected:
 	std::array<ModelRenderContainer<T>, MODELTYPE_CNT> modelRenderers;
 
 	std::vector<T*> unsortedObjects;
-	std::unordered_map<T*, ScopedTransformMemAlloc> matricesMemAllocs;
+	std::unordered_map<T*, ScopedTransformMemAlloc> scTransMemAllocMap;
 
 	bool& mtModelDrawer;
 };
@@ -100,7 +100,7 @@ inline CModelDrawerDataBase<T>::CModelDrawerDataBase(const std::string& ecName, 
 	: CModelDrawerDataConcept(ecName, ecOrder)
 	, mtModelDrawer(mtModelDrawer_)
 {
-	matricesMemAllocs.reserve(MMA_SIZE0);
+	scTransMemAllocMap.reserve(MMA_SIZE0);
 	for (auto& mr : modelRenderers) { mr.Clear(); }
 }
 
@@ -108,7 +108,7 @@ template<typename T>
 inline CModelDrawerDataBase<T>::~CModelDrawerDataBase()
 {
 	unsortedObjects.clear();
-	matricesMemAllocs.clear();
+	scTransMemAllocMap.clear();
 }
 
 template<typename T>
@@ -126,7 +126,7 @@ inline void CModelDrawerDataBase<T>::AddObject(const T* co, bool add)
 	unsortedObjects.emplace_back(o);
 
 	const uint32_t numMatrices = (o->model ? o->model->numPieces : 0) + 1u;
-	matricesMemAllocs.emplace(o, ScopedTransformMemAlloc(numMatrices));
+	scTransMemAllocMap.emplace(o, ScopedTransformMemAlloc(numMatrices));
 
 	modelUniformsStorage.GetObjOffset(co);
 }
@@ -141,7 +141,7 @@ inline void CModelDrawerDataBase<T>::DelObject(const T* co, bool del)
 	}
 
 	if (del && spring::VectorErase(unsortedObjects, o)) {
-		matricesMemAllocs.erase(o);
+		scTransMemAllocMap.erase(o);
 		modelUniformsStorage.GetObjOffset(co);
 	}
 }
@@ -164,8 +164,7 @@ inline void CModelDrawerDataBase<T>::UpdateObjectSMMA(const T* o)
 
 	// from one point it doesn't worth the comparison, cause units usually move
 	// but having not updated smma[0] allows for longer solid no-update areas in ModelUniformsUploader::UpdateDerived()
-	if (tmNew != tmOld)
-		smma[0] = tmNew;
+	smma.UpdateIfChanged(0, tmNew);
 
 	for (int i = 0; i < o->localModel.pieces.size(); ++i) {
 		const LocalModelPiece& lmp = o->localModel.pieces[i];
@@ -175,11 +174,13 @@ inline void CModelDrawerDataBase<T>::UpdateObjectSMMA(const T* o)
 			continue;
 
 		if unlikely(!lmp.GetScriptVisible()) {
-			smma[i + 1] = CMatrix44f::Zero();
+			//smma[i + 1] = CMatrix44f::Zero();
+			smma.UpdateForced(i + 1, CMatrix44f::Zero());
 			continue;
 		}
 
-		smma[i + 1] = lmp.GetModelSpaceMatrix();
+		// UpdateIfChanged is not needed, wasCustomDirty takes that role
+		smma.UpdateForced(i + 1, lmp.GetModelSpaceMatrix());
 	}
 }
 
