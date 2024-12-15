@@ -6,16 +6,29 @@
 TransformsMemStorage transformsMemStorage;
 ModelUniformsStorage modelUniformsStorage;
 
-ModelUniformsStorage::ModelUniformsStorage()
+void ModelUniformsStorage::Init()
 {
-	RECOIL_DETAILED_TRACY_ZONE;
+	assert(storage.size() == 0);
+	assert(updateList.Size() == 0);
+	assert(objectsMap.size() == 0);
 	storage[AddObjects(static_cast<const CWorldObject*>(nullptr))] = dummy;
 }
 
-ModelUniformsStorage::~ModelUniformsStorage()
+void ModelUniformsStorage::Kill()
 {
-	// just in case
+	assert(storage.size() == 1);
+	assert(updateList.Size() == 1);
+	assert(objectsMap.size() == 1);
 	DelObjects(static_cast<const CWorldObject*>(nullptr));
+	updateList.Clear();
+	storage.clear();
+	objectsMap.clear();
+}
+
+void ModelUniformsStorage::Reset()
+{
+	Kill();
+	Init();
 }
 
 size_t ModelUniformsStorage::AddObjects(const CWorldObject* o)
@@ -85,7 +98,7 @@ void TransformsMemStorage::Reset()
 {
 	assert(Threading::IsMainThread());
 	storage.Reset();
-	updateList.Trim(storage.GetSize());
+	updateList.Clear();
 }
 
 size_t TransformsMemStorage::Allocate(size_t numElems)

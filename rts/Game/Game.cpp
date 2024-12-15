@@ -736,6 +736,9 @@ void CGame::PreLoadRendering()
 	geometricObjects = new CGeometricObjects();
 
 	// load components that need to exist before PostLoadSimulation
+	modelUniformsStorage.Init();
+	//transformsMemStorage.Init(); // Add?
+
 	transformsUploader.Init();
 	modelUniformsUploader.Init();
 	worldDrawer.InitPre();
@@ -997,8 +1000,12 @@ void CGame::KillRendering()
 	icon::iconHandler.Kill();
 	spring::SafeDelete(geometricObjects);
 	worldDrawer.Kill();
+
 	transformsUploader.Kill();
 	modelUniformsUploader.Kill();
+
+	modelUniformsStorage.Kill();
+	//transformsMemStorage.Kill(); //Add?
 }
 
 void CGame::KillInterface()

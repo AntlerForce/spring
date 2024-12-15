@@ -26,6 +26,7 @@ public:
 	void Trim(size_t newLessThanOrEqualSize);
 	void Resize(size_t newSize) { updateList.resize(newSize); SetNeedUpdateAll(); }
 	void Reserve(size_t reservedSize) { updateList.reserve(reservedSize); }
+	void Clear() { *this = std::move(UpdateList()); }
 
 	void SetUpdate(size_t first, size_t count);
 	void SetUpdate(const IteratorPair& it);

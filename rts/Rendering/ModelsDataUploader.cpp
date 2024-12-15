@@ -80,6 +80,47 @@ namespace Impl {
 
 		memStorage.SetUpdateListReset();
 	}
+
+	template<typename SSBO, typename DataType>
+	std::unique_ptr<SSBO> InitCommon(uint32_t bindingIdx, uint32_t elemCount0, uint32_t elemCountIncr, uint8_t type, bool coherent, uint32_t numBuffers, const char* className)
+	{
+		if (!globalRendering->haveGL4)
+			return;
+
+		assert(bindingIdx < -1u);
+
+		IStreamBufferConcept::StreamBufferCreationParams p;
+		p.target = GL_SHADER_STORAGE_BUFFER;
+		p.numElems = elemCount0;
+		p.name = std::string(className);
+		p.type = static_cast<IStreamBufferConcept::Types>(type);
+		p.resizeAble = true;
+		p.coherent = coherent;
+		p.numBuffers = numBuffers;
+		p.optimizeForStreaming = true;
+
+		auto ssbo = IStreamBuffer<DataType>::CreateInstance(p);
+		ssbo->BindBufferRange(bindingIdx);
+
+		return std::move(ssbo);
+	}
+
+	template<typename SSBO>
+	void KillCommon(std::unique_ptr<SSBO>& ssbo, uint32_t bindingIdx)
+	{
+		if (!globalRendering->haveGL4)
+			return;
+
+		ssbo->UnbindBufferRange(bindingIdx);
+		ssbo = nullptr;
+	}
+
+	template<typename SSBO, typename DataType>
+	inline uint32_t GetElemsCount(std::unique_ptr<SSBO>& ssbo)
+	{
+		return ssbo->GetByteSize() / sizeof(DataType);
+	}
+
 }
 
 template<typename T, typename Derived>
@@ -125,31 +166,31 @@ inline uint32_t TypedStorageBufferUploader<T, Derived>::GetElemsCount() const
 }
 
 template<typename T, typename Derived>
-std::size_t TypedStorageBufferUploader<T, Derived>::GetUnitDefElemOffset(int32_t unitDefID) const
+size_t TypedStorageBufferUploader<T, Derived>::GetUnitDefElemOffset(int32_t unitDefID) const
 {
 	return GetDefElemOffsetImpl(unitDefHandler->GetUnitDefByID(unitDefID));
 }
 
 template<typename T, typename Derived>
-std::size_t TypedStorageBufferUploader<T, Derived>::GetFeatureDefElemOffset(int32_t featureDefID) const
+size_t TypedStorageBufferUploader<T, Derived>::GetFeatureDefElemOffset(int32_t featureDefID) const
 {
 	return GetDefElemOffsetImpl(featureDefHandler->GetFeatureDefByID(featureDefID));
 }
 
 template<typename T, typename Derived>
-std::size_t TypedStorageBufferUploader<T, Derived>::GetUnitElemOffset(int32_t unitID) const
+size_t TypedStorageBufferUploader<T, Derived>::GetUnitElemOffset(int32_t unitID) const
 {
 	return GetElemOffsetImpl(unitHandler.GetUnit(unitID));
 }
 
 template<typename T, typename Derived>
-std::size_t TypedStorageBufferUploader<T, Derived>::GetFeatureElemOffset(int32_t featureID) const
+size_t TypedStorageBufferUploader<T, Derived>::GetFeatureElemOffset(int32_t featureID) const
 {
 	return GetElemOffsetImpl(featureHandler.GetFeature(featureID));
 }
 
 template<typename T, typename Derived>
-std::size_t TypedStorageBufferUploader<T, Derived>::GetProjectileElemOffset(int32_t syncedProjectileID) const
+size_t TypedStorageBufferUploader<T, Derived>::GetProjectileElemOffset(int32_t syncedProjectileID) const
 {
 	return GetElemOffsetImpl(projectileHandler.GetProjectileBySyncedID(syncedProjectileID));
 }
@@ -183,7 +224,7 @@ void TransformsUploader::UpdateDerived()
 	Impl::UpdateCommon(*this, ssbo, transformsMemStorage, className, __func__);
 }
 
-std::size_t TransformsUploader::GetDefElemOffsetImpl(const S3DModel* model) const
+size_t TransformsUploader::GetDefElemOffsetImpl(const S3DModel* model) const
 {
 	if (model == nullptr) {
 		LOG_L(L_ERROR, "[%s::%s] Supplied nullptr S3DModel", className, __func__);
@@ -193,7 +234,7 @@ std::size_t TransformsUploader::GetDefElemOffsetImpl(const S3DModel* model) cons
 	return model->GetMatAlloc().GetOffset(false);
 }
 
-std::size_t TransformsUploader::GetDefElemOffsetImpl(const UnitDef* def) const
+size_t TransformsUploader::GetDefElemOffsetImpl(const UnitDef* def) const
 {
 	if (def == nullptr) {
 		LOG_L(L_ERROR, "[%s::%s] Supplied nullptr UnitDef", className, __func__);
@@ -203,7 +244,7 @@ std::size_t TransformsUploader::GetDefElemOffsetImpl(const UnitDef* def) const
 	return GetDefElemOffsetImpl(def->LoadModel());
 }
 
-std::size_t TransformsUploader::GetDefElemOffsetImpl(const FeatureDef* def) const
+size_t TransformsUploader::GetDefElemOffsetImpl(const FeatureDef* def) const
 {
 	if (def == nullptr) {
 		LOG_L(L_ERROR, "[%s::%s] Supplied nullptr FeatureDef", className, __func__);
@@ -213,14 +254,14 @@ std::size_t TransformsUploader::GetDefElemOffsetImpl(const FeatureDef* def) cons
 	return GetDefElemOffsetImpl(def->LoadModel());
 }
 
-std::size_t TransformsUploader::GetElemOffsetImpl(const CUnit* unit) const
+size_t TransformsUploader::GetElemOffsetImpl(const CUnit* unit) const
 {
 	if (unit == nullptr) {
 		LOG_L(L_ERROR, "[%s::%s] Supplied nullptr CUnit", className, __func__);
 		return TransformsMemStorage::INVALID_INDEX;
 	}
 
-	if (std::size_t offset = CUnitDrawer::GetTransformMemAlloc(unit).GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
+	if (size_t offset = CUnitDrawer::GetTransformMemAlloc(unit).GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
 		return offset;
 	}
 
@@ -228,14 +269,14 @@ std::size_t TransformsUploader::GetElemOffsetImpl(const CUnit* unit) const
 	return TransformsMemStorage::INVALID_INDEX;
 }
 
-std::size_t TransformsUploader::GetElemOffsetImpl(const CFeature* feature) const
+size_t TransformsUploader::GetElemOffsetImpl(const CFeature* feature) const
 {
 	if (feature == nullptr) {
 		LOG_L(L_ERROR, "[%s::%s] Supplied nullptr CFeature", className, __func__);
 		return TransformsMemStorage::INVALID_INDEX;
 	}
 
-	if (std::size_t offset = CFeatureDrawer::GetTransformMemAlloc(feature).GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
+	if (size_t offset = CFeatureDrawer::GetTransformMemAlloc(feature).GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
 		return offset;
 	}
 
@@ -243,7 +284,7 @@ std::size_t TransformsUploader::GetElemOffsetImpl(const CFeature* feature) const
 	return TransformsMemStorage::INVALID_INDEX;
 }
 
-std::size_t TransformsUploader::GetElemOffsetImpl(const CProjectile* p) const
+size_t TransformsUploader::GetElemOffsetImpl(const CProjectile* p) const
 {
 	if (p == nullptr) {
 		LOG_L(L_ERROR, "[%s::%s] Supplied nullptr CProjectile", className, __func__);
@@ -260,7 +301,7 @@ std::size_t TransformsUploader::GetElemOffsetImpl(const CProjectile* p) const
 		return TransformsMemStorage::INVALID_INDEX;
 	}
 	/*
-	if (std::size_t offset = p->GetMatAlloc().GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
+	if (size_t offset = p->GetMatAlloc().GetOffset(false); offset != TransformsMemStorage::INVALID_INDEX) {
 		return offset;
 	}
 	*/
@@ -295,21 +336,21 @@ void ModelUniformsUploader::UpdateDerived()
 	Impl::UpdateCommon(*this, ssbo, modelUniformsStorage, className, __func__);
 }
 
-std::size_t ModelUniformsUploader::GetDefElemOffsetImpl(const S3DModel* model) const
+size_t ModelUniformsUploader::GetDefElemOffsetImpl(const S3DModel* model) const
 {
 	assert(false);
 	LOG_L(L_ERROR, "[%s::%s] Invalid call", className, __func__);
 	return ModelUniformsStorage::INVALID_INDEX;
 }
 
-std::size_t ModelUniformsUploader::GetDefElemOffsetImpl(const UnitDef* def) const
+size_t ModelUniformsUploader::GetDefElemOffsetImpl(const UnitDef* def) const
 {
 	assert(false);
 	LOG_L(L_ERROR, "[%s::%s] Invalid call", className, __func__);
 	return ModelUniformsStorage::INVALID_INDEX;
 }
 
-std::size_t ModelUniformsUploader::GetDefElemOffsetImpl(const FeatureDef* def) const
+size_t ModelUniformsUploader::GetDefElemOffsetImpl(const FeatureDef* def) const
 {
 	assert(false);
 	LOG_L(L_ERROR, "[%s::%s] Invalid call", className, __func__);
@@ -317,14 +358,14 @@ std::size_t ModelUniformsUploader::GetDefElemOffsetImpl(const FeatureDef* def) c
 }
 
 
-std::size_t ModelUniformsUploader::GetElemOffsetImpl(const CUnit* unit) const
+size_t ModelUniformsUploader::GetElemOffsetImpl(const CUnit* unit) const
 {
 	if (unit == nullptr) {
 		LOG_L(L_ERROR, "[%s::%s] Supplied nullptr CUnit", className, __func__);
 		return ModelUniformsStorage::INVALID_INDEX;
 	}
 
-	if (std::size_t offset = modelUniformsStorage.GetObjOffset(unit); offset != std::size_t(-1)) {
+	if (size_t offset = modelUniformsStorage.GetObjOffset(unit); offset != size_t(-1)) {
 		return offset;
 	}
 
@@ -332,14 +373,14 @@ std::size_t ModelUniformsUploader::GetElemOffsetImpl(const CUnit* unit) const
 	return ModelUniformsStorage::INVALID_INDEX;
 }
 
-std::size_t ModelUniformsUploader::GetElemOffsetImpl(const CFeature* feature) const
+size_t ModelUniformsUploader::GetElemOffsetImpl(const CFeature* feature) const
 {
 	if (feature == nullptr) {
 		LOG_L(L_ERROR, "[%s::%s] Supplied nullptr CFeature", className, __func__);
 		return ModelUniformsStorage::INVALID_INDEX;
 	}
 
-	if (std::size_t offset = modelUniformsStorage.GetObjOffset(feature); offset != std::size_t(-1)) {
+	if (size_t offset = modelUniformsStorage.GetObjOffset(feature); offset != size_t(-1)) {
 		return offset;
 	}
 
@@ -347,14 +388,14 @@ std::size_t ModelUniformsUploader::GetElemOffsetImpl(const CFeature* feature) co
 	return ModelUniformsStorage::INVALID_INDEX;
 }
 
-std::size_t ModelUniformsUploader::GetElemOffsetImpl(const CProjectile* p) const
+size_t ModelUniformsUploader::GetElemOffsetImpl(const CProjectile* p) const
 {
 	if (p == nullptr) {
 		LOG_L(L_ERROR, "[%s::%s] Supplied nullptr CProjectile", className, __func__);
 		return ModelUniformsStorage::INVALID_INDEX;
 	}
 
-	if (std::size_t offset = modelUniformsStorage.GetObjOffset(p); offset != std::size_t(-1)) {
+	if (size_t offset = modelUniformsStorage.GetObjOffset(p); offset != size_t(-1)) {
 		return offset;
 	}
 

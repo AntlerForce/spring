@@ -157,8 +157,9 @@ class ModelUniformsStorage {
 private:
 	using MyType = ModelUniformData;
 public:
-	ModelUniformsStorage();
-	~ModelUniformsStorage();
+	void Init();
+	void Kill();
+	void Reset();
 public:
 	size_t AddObjects(const CWorldObject* o);
 	void   DelObjects(const CWorldObject* o);
