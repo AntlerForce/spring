@@ -129,7 +129,7 @@ public:
 		assert(firstElem != TransformsMemStorage::INVALID_INDEX);
 		assert(offset >= 0 && offset < numElems);
 
-		return transformsMemStorage.UpdateIfChanged(firstElem + offset, newValue, EqCmp);
+		return transformsMemStorage.UpdateIfChanged(firstElem + offset, std::forward<MyTypeLike>(newValue), EqCmp);
 	}
 
 	template<typename MyTypeLike = TransformsMemStorage::MyType> // to force universal references

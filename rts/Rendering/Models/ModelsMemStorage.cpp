@@ -6,6 +6,8 @@
 TransformsMemStorage transformsMemStorage;
 ModelUniformsStorage modelUniformsStorage;
 
+////////////////////////////////////////////////////////////////////
+
 void ModelUniformsStorage::Init()
 {
 	assert(updateList.Empty());
@@ -19,7 +21,7 @@ void ModelUniformsStorage::Kill()
 {
 	// Remaining objects are not cleared anywhere (not a good thing) so delete them here
 	assert(updateList.Size() == objectsMap.size());
-	assert(updateList.Size() == storage.size());
+	assert(updateList.Size() <= storage.size()); // storage.size() doesn't account for gaps
 	updateList.Clear();
 	storage.clear();
 	objectsMap.clear();
@@ -88,6 +90,8 @@ ModelUniformsStorage::MyType& ModelUniformsStorage::GetObjUniformsArray(const CW
 	size_t offset = GetObjOffset(o);
 	return storage[offset];
 }
+
+////////////////////////////////////////////////////////////////////
 
 TransformsMemStorage::TransformsMemStorage()
 	: storage(StablePosAllocator<MyType>(INIT_NUM_ELEMS))
