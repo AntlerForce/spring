@@ -232,6 +232,8 @@ bool CFeatureHandler::UpdateFeature(CFeature* feature)
 		Sim::registry.destroy(feature->entityReference);
 
 		eventHandler.RenderFeatureDestroyed(feature);
+		modelUniformsStorage.DelObjects(feature);
+
 		eventHandler.FeatureDestroyed(feature);
 
 		deletedFeatureIDs.push_back(feature->id);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 #include "ModelsMemStorageDefs.h"
@@ -9,6 +8,7 @@
 #include "System/Matrix44f.h"
 #include "System/MemPoolTypes.h"
 #include "System/FreeListMap.h"
+#include "System/UnorderedMap.hpp"
 #include "System/Threading/SpringThreading.h"
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Objects/SolidObjectDef.h"
@@ -161,20 +161,17 @@ public:
 	void Kill();
 	void Reset();
 public:
-	size_t AddObjects(const CWorldObject* o);
-	void   DelObjects(const CWorldObject* o);
 	size_t GetObjOffset(const CWorldObject* o);
 	MyType& GetObjUniformsArray(const CWorldObject* o);
+	void   DelObjects(const CWorldObject* o);
 
-	size_t AddObjects(const SolidObjectDef* o) { return INVALID_INDEX; }
-	void   DelObjects(const SolidObjectDef* o) {}
 	size_t GetObjOffset(const SolidObjectDef* o) { return INVALID_INDEX; }
 	auto& GetObjUniformsArray(const SolidObjectDef* o) { return dummy; }
+	void   DelObjects(const SolidObjectDef* o) {}
 
-	size_t AddObjects(const S3DModel* o) { return INVALID_INDEX; }
-	void   DelObjects(const S3DModel* o) {}
 	size_t GetObjOffset(const S3DModel* o) { return INVALID_INDEX; }
 	auto& GetObjUniformsArray(const S3DModel* o) { return dummy; }
+	void   DelObjects(const S3DModel* o) {}
 
 	auto GetSize() const { return storage.GetData().size(); }
 	const auto& GetData() const { return storage.GetData(); }
@@ -183,13 +180,18 @@ public:
 	void SetUpdateListUpdateAll() { updateList.SetNeedUpdateAll(); }
 	void SetUpdateListReset() { updateList.ResetNeedUpdateAll(); }
 private:
+	// not used directly
+	size_t AddObjects(const CWorldObject* o);
+	size_t AddObjects(const SolidObjectDef* o) { return INVALID_INDEX; }
+	size_t AddObjects(const S3DModel* o) { return INVALID_INDEX; }
+private:
 	UpdateList updateList;
 public:
 	static constexpr size_t INVALID_INDEX = 0;
 private:
 	inline static MyType dummy = {};
 
-	std::unordered_map<CWorldObject*, size_t> objectsMap;
+	spring::unordered_map<CWorldObject*, size_t> objectsMap;
 	spring::FreeListMap<MyType> storage;
 };
 

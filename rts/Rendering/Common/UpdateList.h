@@ -22,6 +22,7 @@ public:
 
 	size_t Size() const { return updateList.size(); }
 	size_t Capacity() const { return updateList.capacity(); }
+	bool Empty() const { return updateList.empty(); }
 
 	void Trim(size_t newLessThanOrEqualSize);
 	void Resize(size_t newSize) { updateList.resize(newSize); SetNeedUpdateAll(); }

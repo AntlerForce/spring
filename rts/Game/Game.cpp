@@ -1003,9 +1003,6 @@ void CGame::KillRendering()
 
 	transformsUploader.Kill();
 	modelUniformsUploader.Kill();
-
-	modelUniformsStorage.Kill();
-	//transformsMemStorage.Kill(); //Add?
 }
 
 void CGame::KillInterface()
@@ -1047,6 +1044,9 @@ void CGame::KillSimulation()
 	featureHandler.Kill(); // depends on unitHandler (via ~CFeature)
 	unitHandler.Kill();
 	projectileHandler.Kill();
+
+	modelUniformsStorage.Kill();
+	//transformsMemStorage.Kill(); //Add?
 
 	LOG("[Game::%s][3]", __func__);
 	IPathManager::FreeInstance(pathManager);

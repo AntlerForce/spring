@@ -8,18 +8,18 @@ ModelUniformsStorage modelUniformsStorage;
 
 void ModelUniformsStorage::Init()
 {
-	assert(storage.size() == 0);
-	assert(updateList.Size() == 0);
-	assert(objectsMap.size() == 0);
+	assert(updateList.Empty());
+	assert(objectsMap.empty());
+	assert(storage.empty());
+
 	storage[AddObjects(static_cast<const CWorldObject*>(nullptr))] = dummy;
 }
 
 void ModelUniformsStorage::Kill()
 {
-	assert(storage.size() == 1);
-	assert(updateList.Size() == 1);
-	assert(objectsMap.size() == 1);
-	DelObjects(static_cast<const CWorldObject*>(nullptr));
+	// Remaining objects are not cleared anywhere (not a good thing) so delete them here
+	assert(updateList.Size() == objectsMap.size());
+	assert(updateList.Size() == storage.size());
 	updateList.Clear();
 	storage.clear();
 	objectsMap.clear();
