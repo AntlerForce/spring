@@ -14,7 +14,7 @@ void ModelUniformsStorage::Init()
 	assert(objectsMap.empty());
 	assert(storage.empty());
 
-	storage[AddObjects(static_cast<const CWorldObject*>(nullptr))] = dummy;
+	storage[AddObject(static_cast<const CWorldObject*>(nullptr))] = dummy;
 }
 
 void ModelUniformsStorage::Kill()
@@ -33,7 +33,7 @@ void ModelUniformsStorage::Reset()
 	Init();
 }
 
-size_t ModelUniformsStorage::AddObjects(const CWorldObject* o)
+size_t ModelUniformsStorage::AddObject(const CWorldObject* o)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	const size_t idx = storage.Add(ModelUniformData());
@@ -52,11 +52,13 @@ size_t ModelUniformsStorage::AddObjects(const CWorldObject* o)
 	return idx;
 }
 
-void ModelUniformsStorage::DelObjects(const CWorldObject* o)
+void ModelUniformsStorage::DelObject(const CWorldObject* o)
 {
 	RECOIL_DETAILED_TRACY_ZONE;
 	const auto it = objectsMap.find(const_cast<CWorldObject*>(o));
-	assert(it != objectsMap.end());
+
+	if (it != objectsMap.end())
+		return;
 
 	storage.Del(it->second);
 
@@ -80,7 +82,7 @@ size_t ModelUniformsStorage::GetObjOffset(const CWorldObject* o)
 	if (it != objectsMap.end())
 		return it->second;
 
-	size_t idx = AddObjects(o);
+	size_t idx = AddObject(o);
 	return idx;
 }
 

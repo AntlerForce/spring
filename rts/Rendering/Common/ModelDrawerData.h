@@ -128,7 +128,7 @@ inline void CModelDrawerDataBase<T>::AddObject(const T* co, bool add)
 	const uint32_t numMatrices = (o->model ? o->model->numPieces : 0) + 1u;
 	scTransMemAllocMap.emplace(o, ScopedTransformMemAlloc(numMatrices));
 
-	modelUniformsStorage.GetObjOffset(co);
+	modelUniformsStorage.AddObject(co);
 }
 
 template<typename T>
@@ -142,7 +142,7 @@ inline void CModelDrawerDataBase<T>::DelObject(const T* co, bool del)
 
 	if (del && spring::VectorErase(unsortedObjects, o)) {
 		scTransMemAllocMap.erase(o);
-		modelUniformsStorage.GetObjOffset(co);
+		modelUniformsStorage.DelObject(co);
 	}
 }
 

@@ -298,8 +298,6 @@ void CUnitHandler::DeleteUnit(CUnit* delUnit)
 	// we want to call RenderUnitDestroyed while the unit is still valid
 	eventHandler.RenderUnitDestroyed(delUnit);
 
-	modelUniformsStorage.DelObjects(delUnit);
-
 	const auto it = std::find(activeUnits.begin(), activeUnits.end(), delUnit);
 
 	if (it == activeUnits.end()) {
