@@ -31,6 +31,8 @@ struct Transform {
 		s = 1.0f;
 	}
 
+	static const Transform& Zero();
+
 	// can be used to enable/disable rendering
 	void SetScaleSign(float signSrc);
 

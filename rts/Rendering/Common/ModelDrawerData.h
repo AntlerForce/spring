@@ -159,7 +159,7 @@ inline void CModelDrawerDataBase<T>::UpdateObjectSMMA(const T* o)
 {
 	ScopedTransformMemAlloc& smma = GetObjectTransformMemAlloc(o);
 
-	const auto  tmNew = o->GetTransformMatrix();
+	const auto tmNew = Transform::FromMatrix(o->GetTransformMatrix());
 
 	// from one point it doesn't worth the comparison, cause units usually move
 	// but having not updated smma[0] allows for longer solid no-update areas in ModelUniformsUploader::UpdateDerived()
@@ -174,12 +174,12 @@ inline void CModelDrawerDataBase<T>::UpdateObjectSMMA(const T* o)
 
 		if unlikely(!lmp.GetScriptVisible()) {
 			//smma[i + 1] = CMatrix44f::Zero();
-			smma.UpdateForced(i + 1, CMatrix44f::Zero());
+			smma.UpdateForced(i + 1, Transform::Zero());
 			continue;
 		}
 
 		// UpdateIfChanged is not needed, wasCustomDirty takes that role
-		smma.UpdateForced(i + 1, lmp.GetModelSpaceMatrix());
+		smma.UpdateForced(i + 1, lmp.GetModelSpaceTransform());
 	}
 }
 

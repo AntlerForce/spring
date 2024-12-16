@@ -14,6 +14,16 @@ CR_REG_METADATA(Transform, (
 static_assert(sizeof (Transform) == 2 * 4 * sizeof(float));
 static_assert(alignof(Transform) == alignof(decltype(Transform::r)));
 
+const Transform& Transform::Zero()
+{
+	static const Transform zero{
+		CQuaternion{ 0, 0, 0, 0 },
+		float3{ 0, 0, 0 },
+		0
+	};
+	return zero;
+}
+
 void Transform::SetScaleSign(float signSrc)
 {
 	s = std::copysignf(s, signSrc);

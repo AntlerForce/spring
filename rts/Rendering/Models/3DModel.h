@@ -443,7 +443,7 @@ struct LocalModelPiece
 	}
 
 	// note: actually OBJECT_TO_WORLD but transform is the same
-	float3 GetAbsolutePos() const { return (GetModelSpaceMatrix().GetPos() * WORLD_TO_OBJECT_SPACE); }
+	float3 GetAbsolutePos() const { return (GetModelSpaceTransform().t * WORLD_TO_OBJECT_SPACE); }
 
 	bool GetEmitDirPos(float3& emitPos, float3& emitDir) const;
 
@@ -476,7 +476,7 @@ struct LocalModelPiece
 
 	const float3& GetDirection() const { return dir; }
 
-	CMatrix44f GetModelSpaceMatrix() const { if (dirty) UpdateParentMatricesRec(); return modelSpaceTra.ToMatrix(); }
+	Transform GetModelSpaceTransform() const { if (dirty) UpdateParentMatricesRec(); return modelSpaceTra; }
 
 	const CollisionVolume* GetCollisionVolume() const { return &colvol; }
 	      CollisionVolume* GetCollisionVolume()       { return &colvol; }
@@ -538,7 +538,6 @@ struct LocalModel
 
 	// raw forms, the piece-index must be valid
 	const float3 GetRawPiecePos(int pieceIdx) const { return pieces[pieceIdx].GetAbsolutePos(); }
-	const CMatrix44f GetRawPieceMatrix(int pieceIdx) const { return pieces[pieceIdx].GetModelSpaceMatrix(); }
 
 	// used by all SolidObject's; accounts for piece movement
 	float GetDrawRadius() const { return (boundingVolume.GetBoundingRadius()); }

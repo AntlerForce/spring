@@ -461,7 +461,7 @@ void LocalModel::UpdateBoundingVolume()
 	float3 bbMaxs = DEF_MAX_SIZE;
 
 	for (const auto& lmPiece: pieces) {
-		const CMatrix44f& matrix = lmPiece.GetModelSpaceMatrix();
+		const auto& tra = lmPiece.GetModelSpaceTransform();
 		const S3DModelPiece* piece = lmPiece.original;
 
 		// skip empty pieces or bounds will not be sensible
@@ -485,7 +485,7 @@ void LocalModel::UpdateBoundingVolume()
 		};
 
 		for (const float3& v: verts) {
-			const float3 vertex = matrix * v;
+			const float3 vertex = tra * v;
 
 			bbMins = float3::min(bbMins, vertex);
 			bbMaxs = float3::max(bbMaxs, vertex);
@@ -662,7 +662,7 @@ void LocalModelPiece::Draw() const
 	assert(original);
 
 	glPushMatrix();
-	glMultMatrixf(GetModelSpaceMatrix());
+	glMultMatrixf(GetModelSpaceTransform().ToMatrix());
 	S3DModelHelpers::BindLegacyAttrVBOs();
 	original->DrawElements();
 	S3DModelHelpers::UnbindLegacyAttrVBOs();
@@ -679,7 +679,7 @@ void LocalModelPiece::DrawLOD(uint32_t lod) const
 		return;
 
 	glPushMatrix();
-	glMultMatrixf(GetModelSpaceMatrix());
+	glMultMatrixf(GetModelSpaceTransform().ToMatrix());
 	if (const auto ldl = lodDispLists[lod]; ldl == 0) {
 		S3DModelHelpers::BindLegacyAttrVBOs();
 		original->DrawElements();
@@ -711,8 +711,8 @@ bool LocalModelPiece::GetEmitDirPos(float3& emitPos, float3& emitDir) const
 		return false;
 
 	// note: actually OBJECT_TO_WORLD but transform is the same
-	emitPos = GetModelSpaceMatrix() *        original->GetEmitPos()        * WORLD_TO_OBJECT_SPACE;
-	emitDir = GetModelSpaceMatrix() * float4(original->GetEmitDir(), 0.0f) * WORLD_TO_OBJECT_SPACE;
+	emitPos = GetModelSpaceTransform() *        original->GetEmitPos()        * WORLD_TO_OBJECT_SPACE;
+	emitDir = GetModelSpaceTransform() * float4(original->GetEmitDir(), 0.0f) * WORLD_TO_OBJECT_SPACE;
 	return true;
 }
 
@@ -764,7 +764,7 @@ void S3DModel::SetPieceMatrices()
 	for (size_t i = 0; i < pieceObjects.size(); ++i) {
 		const auto* po = pieceObjects[i];
 		//traAlloc[0         + i] = po->bposeTransform.ToMatrix();
-		traAlloc.UpdateForced((0         + i), po->bposeTransform.ToMatrix());
+		traAlloc.UpdateForced((0         + i), po->bposeTransform);
 	}
 
 	// use this occasion and copy inverse bpose matrices
@@ -772,6 +772,6 @@ void S3DModel::SetPieceMatrices()
 	for (size_t i = 0; i < pieceObjects.size(); ++i) {
 		const auto* po = pieceObjects[i];
 		//traAlloc[numPieces + i] = po->bposeInvTransform.ToMatrix();
-		traAlloc.UpdateForced((numPieces + i), po->bposeInvTransform.ToMatrix());
+		traAlloc.UpdateForced((numPieces + i), po->bposeInvTransform);
 	}
 }

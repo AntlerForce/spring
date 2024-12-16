@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <memory>
 
-#include "System/Matrix44f.h"
+#include "System/Transform.hpp"
 #include "System/TypeToStr.h"
 #include "Rendering/GL/StreamBuffer.h"
 #include "Rendering/Models/ModelsMemStorageDefs.h"
@@ -21,7 +21,7 @@ struct S3DModel;
 class TransformsUploader {
 public:
 	using MyClassName = TransformsUploader;
-	using MyDataType = CMatrix44f;
+	using MyDataType = Transform;
 public:
 	void Init();
 	void Kill();

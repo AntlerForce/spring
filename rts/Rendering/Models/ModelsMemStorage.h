@@ -5,10 +5,11 @@
 
 #include "ModelsMemStorageDefs.h"
 #include "ModelsLock.h"
-#include "System/Matrix44f.h"
+#include "System/Transform.hpp"
 #include "System/MemPoolTypes.h"
 #include "System/FreeListMap.h"
 #include "System/UnorderedMap.hpp"
+#include "System/TypeToStr.h"
 #include "System/Threading/SpringThreading.h"
 #include "Sim/Misc/GlobalConstants.h"
 #include "Sim/Objects/SolidObjectDef.h"
@@ -16,7 +17,7 @@
 
 class TransformsMemStorage {
 public:
-	using MyType = CMatrix44f;
+	using MyType = Transform;
 	using EqualCmpFunctor = bool(*)(const MyType&, const MyType&);
 public:
 	explicit TransformsMemStorage();
@@ -93,7 +94,7 @@ public:
 		if (firstElem == TransformsMemStorage::INVALID_INDEX)
 			return;
 
-		transformsMemStorage.Free(firstElem, numElems, &CMatrix44f::Zero());
+		transformsMemStorage.Free(firstElem, numElems, &Transform::Zero());
 	}
 
 	bool Valid() const { return firstElem != TransformsMemStorage::INVALID_INDEX;	}
